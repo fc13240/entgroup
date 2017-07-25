@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.OrderAdMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.OrderAd">
+		<id column="id" property="id" />
+		<result column="order_id" property="orderId" />
+		<result column="ad_id" property="adId" />
+		<result column="deleted" property="deleted" />
+	</resultMap>
+
+	<!-- 通用查询结果列 -->
+	<sql id="Base_Column_List">
+		id, order_id AS orderId, ad_id AS adId, deleted
+	</sql>
+
+
+	<sql id="Base_style_List">
+		soa.id,soa.`deleted`,sa.id AS a_id,sa.`name` AS
+		a_name,sas.id AS style_id,sas.`name` AS style_name
+	</sql>
+
+
+	<!-- 获取订单下的广告及广告样式 开始 * guofei-->
+	<resultMap type="com.entgroup.adms.dto.OrderAdListDTO" id="getAllAdByOrderPage">
+		<result column="order_id" property="orderId" />
+		<result column="ad_id" property="adId" />
+		<result column="style_name" property="adStyleName" />
+		<result column="ad_name" property="adName" />
+		<result column="ad_slot_count" property="adSlotCount" />
+	</resultMap>
+
+	<select id="getAllAdByOrderPage" resultMap="getAllAdByOrderPage"
+		parameterType="java.lang.String">
+		SELECT
+		soa.`order_id`,
+		sa.`id` ad_id,
+		sa.`name` ad_name,
+		sas.`name`
+		style_name,
+		COUNT(sys_ad_slot.`id`) AS ad_slot_count
+		FROM
+		sys_order_ad
+		soa
+		LEFT JOIN sys_ad sa
+		ON soa.`ad_id` = sa.`id`
+		LEFT JOIN sys_ad_style
+		sas
+		ON sa.`style_id` = sas.`id`
+		LEFT JOIN sys_ad_slot
+		ON
+		sys_ad_slot.`ad_id` = sa.`id`
+		LEFT JOIN sys_video sv
+		ON
+		sys_ad_slot.`video_id` = sv.`id`
+		LEFT JOIN sys_program sp
+		ON
+		sv.`program_id` = sp.`id`
+		<where>
+			sa.`status` = 2
+			AND sa.`order_online` = 1
+			AND soa.`deleted` = 0
+			<if test="orderId!=null">
+				and soa.`order_id`=#{orderId}
+			</if>
+			<if test="styleId!=null">
+				and sas.`id`=#{styleId}
+			</if>
+		</where>
+		GROUP BY sa.`id`
+	</select>
+	<!-- 获取订单下的广告及广告样式 结束 -->
+
+	<!-- 根据广告id获取对应的广告位 开始 * guofei-->
+	<resultMap type="com.entgroup.adms.dto.OrderAdListDTO" id="getAllSlotListByAdId">
+		<result column="slot_id" property="SlotId" />
+		<result column="ad_id" property="adId" />
+		<result column="video_position" property="videoPosition" />
+		<result column="video_name" property="videoName" />
+		<result column="company_name" property="companyName" />
+	</resultMap>
+	<select id="getAllSlotListByAdId" resultMap="getAllSlotListByAdId"
+		parameterType="java.lang.Integer">
+		SELECT
+		sys_company.`company_name`,
+		sys_video.`name` AS video_name,
+		sys_ad_slot.`video_position`
+		FROM
+		sys_ad_slot
+		LEFT JOIN sys_video
+		ON
+		sys_ad_slot.`video_id` = sys_video.`id`
+		LEFT JOIN sys_program
+		ON
+		sys_video.`program_id` = sys_program.`id`
+		LEFT JOIN sys_company
+		ON
+		sys_program.`company_id` = sys_company.`id`
+		LEFT JOIN sys_ad
+		ON
+		sys_ad.`id` = sys_ad_slot.`ad_id`
+		WHERE sys_company.`deleted` = 0
+		AND
+		sys_company.`status` = 3
+		AND sys_company.`company_type` = 1
+		AND
+		sys_ad.`order_online` = 1
+		AND sys_ad.`status` = 2
+		<if test="adId!=null">
+			AND sys_ad_slot.`ad_id` = #{adId}
+		</if>
+	</select>
+	<!-- 根据广告id获取对应的广告位 结束 -->
+
+
+	<!-- 根据订单id查询广告位的数量 guofei -->
+	<select id="selectCountForSlot" resultType="java.lang.Integer"
+		parameterType="java.lang.String">
+		SELECT COUNT(sas.`id`)
+		FROM sys_order_ad soa LEFT JOIN
+		sys_ad sa
+		ON soa.`ad_id`=sa.`id` LEFT JOIN
+		sys_ad_slot sas ON
+		sa.`id`=sas.`ad_id`
+		WHERE soa.`order_id`=#{orderId,jdbcType=DECIMAL}
+		AND soa.`deleted`=0
+		AND sa.`order_online`=1
+		AND sa.`status`=2;
+	</select>
+
+	<!-- 批量删除订单广告关联表 开始  guofei-->
+	<update id="updateBatchDeleted" parameterType="java.util.List">
+		UPDATE sys_order_ad
+		SET sys_order_ad.`deleted`=1
+		WHERE
+		sys_order_ad.`order_id` in
+		<foreach collection="orderIdList" item="item" index="index"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<!-- 批量删除订单广告关联表 结束  -->
+	<!-- 获取已完成订单的订单详情 开始 guofei -->
+	<select id="selectAllAdPage" resultMap="getAllAdByOrderPage"
+		parameterType="java.lang.String">
+		SELECT
+		sa.`id` AS ad_id,
+		sa.`name` AS ad_name,
+		sas.`id` AS style_id,
+		sas.`name` AS style_name
+		FROM
+		sys_order_ad soa
+		LEFT JOIN sys_ad sa
+		ON soa.`ad_id` = sa.`id`
+		LEFT JOIN sys_ad_style sas
+		ON sas.`id` = sa.`style_id`
+		WHERE sa.`status` = 2
+		AND soa.`deleted` = 1
+		<if test="orderId!=null">
+		AND soa.`order_id` = #{orderId}
+		</if>
+		<if test="styleId!=null">
+		AND sas.`id`=#{styleId}
+		</if>
+	</select>
+	<!-- 获取已完成订单的订单详情 结束 -->
+</mapper>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.RoleMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Role">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="role_identity" property="roleIdentity" />
+		<result column="description" property="description" />
+		<result column="deleted" property="deleted" />
+		<result column="parent_id" property="parentId" />
+		<result column="creator_id" property="creatorId" />
+		<result column="created" property="created" />
+		<result column="modifier_id" property="modifierId" />
+		<result column="updated" property="updated" />
+		<result column="company_id" property="companyId" />
+		<result column="role_level" property="roleLevel" />
+	</resultMap>
+
+	<!-- 通用查询结果列 -->
+	<sql id="Base_Column_List">
+        id, name, role_identity AS roleIdentity, description, deleted, parent_id AS parentId, creator_id AS creatorId, created, modifier_id AS modifierId, updated, company_id AS companyId, role_level AS roleLevel
+    </sql>
+
+	<!-- 查询所有角色 -->
+	<resultMap id="allRolesMap" type="com.entgroup.adms.model.system.Role" extends="BaseResultMap">
+		<result property="authorityIds" column="authority_ids"/>
+		<result property="authorityNames" column="authority_names"/>
+		<result property="authorityRemarks" column="authority_remarks"/>
+	</resultMap>
+
+	<select id="getAllRoles" resultMap="allRolesMap" parameterType="com.entgroup.adms.model.system.Role">
+		SELECT
+		r.id,
+		r.name,
+		r.role_identity,
+		r.description,
+		r.deleted,
+		r.parent_id,
+		r.creator_id,
+		r.created,
+		r.modifier_id,
+		r.updated,
+		r.company_id,
+		r.role_level,
+
+		GROUP_CONCAT(a3.id) AS authority_ids,
+		GROUP_CONCAT(DISTINCT(a1.name)) AS authority_names,
+		GROUP_CONCAT(DISTINCT(a1.remark)) AS authority_remarks
+		FROM sys_role r
+		LEFT JOIN sys_role_authority ra ON r.id=ra.role_id
+		LEFT JOIN sys_authority a3 ON a3.id=ra.authority_id AND a3.id > 10000000
+		LEFT JOIN sys_authority a2 ON a2.id=a3.parent_id
+		LEFT JOIN sys_authority a1 ON a1.id=a2.parent_id
+		<where>
+			<if test="id != null">
+				AND r.id = #{id}
+			</if>
+			<if test="roleIdentity != null">
+				AND r.role_identity NOT LIKE CONCAT('%', #{roleIdentity})
+			</if>
+			AND r.role_identity != 'super_administrator'
+		</where>
+		GROUP BY r.id
+	</select>
+</mapper>

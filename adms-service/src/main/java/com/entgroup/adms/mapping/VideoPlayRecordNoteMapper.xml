@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.VideoPlayRecordNoteMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.VideoPlayRecordNote">
+		<id column="id" property="id" />
+		<result column="video_id" property="videoId" />
+		<result column="play_record_count" property="playRecordCount" />
+		<result column="times" property="times" />
+		<result column="entry_time" property="entryTime" />
+		<result column="spare2" property="spare2" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, video_id AS videoId, play_record_count AS playRecordCount, times, entry_time AS entryTime, spare2
+    </sql>
+</mapper>

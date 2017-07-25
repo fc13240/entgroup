@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.SceneMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Scene">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="scene_identify" property="sceneIdentify"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="source_id" property="sourceId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, scene_identify AS sceneIdentify, parent_id AS parentId, source_id AS sourceId
+    </sql>
+    <!-- edited by mxy on 2017-03-21 21:15 begin -->
+    <!--根据获取场景相关广告位-->
+    <select id="getScene4AdsList"
+            resultMap="getScene4AdsListMap" parameterType="com.entgroup.adms.model.system.Scene">
+        SELECT
+        ads.id,
+        ads.video_position,
+        ads.initial_label,
+        ads.created,
+        ads.scene_ids,
+        ads.person_ids,
+        ads.object_ids,
+        ads.slot_label_ids,
+        video.id AS vid,
+        video.name,
+        scene.id AS sid,
+        scene.name AS sname,
+        scene.scene_identify,
+        ad.id AS ad_id,
+        ad.name AS ad_name,
+        ad.type_id,
+        ad.style_id,
+        ad.image_path
+        FROM
+        (SELECT
+        *
+        FROM
+        sys_ad_slot ads
+        <trim prefix="WHERE" prefixOverrides="AND |OR">
+            ads.scene_ids != '0'
+            <if test="videoId != null">
+                AND ads.video_id = #{videoId}
+            </if>
+            <if test="sceneId !=null">
+                AND FIND_IN_SET(#{sceneId}, ads.scene_ids)
+            </if>
+            <if test="adId !=null">
+                AND ads.ad_id = #{adId}
+            </if>
+        </trim>
+        ) ads
+        LEFT JOIN sys_video video
+        ON video.id = ads.video_id
+        LEFT JOIN sys_scene scene
+        ON FIND_IN_SET(scene.id, ads.scene_ids)
+        LEFT JOIN sys_ad ad
+        ON ad.id = ads.ad_id
+        ORDER BY id ASC
+    </select>
+    <resultMap type="com.entgroup.adms.model.system.Scene" id="getScene4AdsListMap" extends="BaseResultMap">
+        <id property="id" column="sid"/>
+        <result property="name" column="sname"/>
+        <result property="sceneIdentify" column="scene_identify"/>
+        <collection property="adSlots" ofType="com.entgroup.adms.model.system.AdSlot" >
+            <id column="id" property="id" />
+            <result column="video_id" property="videoId" />
+            <result column="video_position" property="videoPosition" />
+            <result column="scene_ids" property="sceneIds" />
+            <result column="person_ids" property="personIds" />
+            <result column="ad_id" property="adId" />
+            <result column="object_ids" property="objectIds" />
+            <result column="slot_label_ids" property="slotLabelIds" />
+            <result column="initial_label" property="initialLabel" />
+            <result column="created" property="created" />
+            <association property="video" javaType="com.entgroup.adms.model.system.Video">
+                <id property="id" column="vid"/>
+                <result property="name" column="name"/>
+            </association>
+            <association property="ad"
+                         javaType="com.entgroup.adms.model.system.Ad">
+                <id property="id" column="ad_id"/>
+                <result property="name" column="ad_name"/>
+                <result property="typeId" column="type_id"/>
+                <result property="styleId" column="style_id"/>
+                <result property="imagePath" column="image_path"/>
+            </association>
+        </collection>
+    </resultMap>
+    <!-- edited by mxy on 2017-03-22 09:39 end -->
+    <!-- edited by mxy on 2017-04-21 10:53 begin -->
+    <!--获取场景（分级）-->
+    <select id="getScenes" resultMap="getScenesMap" parameterType="com.entgroup.adms.model.system.Scene">
+        SELECT
+        scene.id,
+        scene.name,
+        scene.scene_identify,
+        scene2.id AS id2,
+        scene2.name AS name2,
+        scene2.scene_identify AS scene_identify2
+        FROM sys_scene scene
+        LEFT JOIN sys_scene scene2
+        ON scene.id = scene2.parent_id
+        <trim prefix="WHERE" prefixOverrides="AND |OR">
+            <if test="sceneId != null">
+                AND scene.id = #{sceneId}
+            </if>
+            <if test="sceneName !=null">
+                AND scene.name LIKE '%${sceneName}%'
+            </if>
+        </trim>
+        ORDER BY id ASC
+    </select>
+    <resultMap type="com.entgroup.adms.model.system.Scene" id="getScenesMap" extends="BaseResultMap">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="sceneIdentify" column="scene_identify"/>
+        <collection property="scenes" ofType="com.entgroup.adms.model.system.Scene" >
+            <id property="id" column="id2"/>
+            <result property="name" column="name2"/>
+            <result property="sceneIdentify" column="scene_identify2"/>
+        </collection>
+    </resultMap>
+    <!-- edited by mxy on 2017-04-21 11:04 end -->
+    
+    
+    <!-- 通过广告位中的场景ID获取场景集合   edited by liuxiaolong on 2017/4/14 -->
+    <select id="selectSlotScenceByIds" parameterType="java.util.List" resultMap="BaseResultMap">
+      select sys_scene.name from sys_scene 
+      <where>
+		    sys_scene.id in
+		    <foreach collection="list" item="id" open="(" close=")" separator=",">
+		     #{id} 
+		    </foreach>
+		</where>
+    </select>
+    
+</mapper>

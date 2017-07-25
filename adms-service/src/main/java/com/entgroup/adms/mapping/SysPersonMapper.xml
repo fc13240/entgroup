@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.PersonMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Person">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="source_id" property="sourceId" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, source_id AS sourceId
+    </sql>
+	<!-- edited by mxy on 2017-03-27 15:22 begin -->
+	<!--根据获取明星相关广告位-->
+	<select id="getPerson4AdsList"
+			resultMap="getPerson4AdsListMap" parameterType="com.entgroup.adms.model.system.Person">
+		SELECT
+		ads.id,
+		ads.video_position,
+		ads.initial_label,
+		ads.created,
+		ads.scene_ids,
+		ads.person_ids,
+		ads.object_ids,
+		ads.slot_label_ids,
+		video.id AS vid,
+		video.name,
+		person.id AS pid,
+		person.name AS pname,
+		ad.id AS ad_id,
+		ad.name AS ad_name,
+		ad.type_id,
+		ad.style_id,
+		ad.image_path
+		FROM
+		(SELECT
+		*
+		FROM
+		sys_ad_slot ads
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			ads.person_ids != '0'
+			<if test="videoId != null">
+				AND ads.video_id = #{videoId}
+			</if>
+			<if test="personId !=null">
+				AND FIND_IN_SET(#{personId}, ads.person_ids)
+			</if>
+			<if test="adId !=null">
+				AND ads.ad_id = #{adId}
+			</if>
+		</trim>
+		) ads
+		LEFT JOIN sys_video video
+		ON video.id = ads.video_id
+		LEFT JOIN sys_person person
+		ON FIND_IN_SET(person.id, ads.person_ids)
+		LEFT JOIN sys_ad ad
+		ON ad.id = ads.ad_id
+		ORDER BY id ASC
+	</select>
+	<resultMap type="com.entgroup.adms.model.system.Person" id="getPerson4AdsListMap" extends="BaseResultMap">
+		<id property="id" column="pid"/>
+		<result property="name" column="pname"/>
+		<collection property="adSlots" ofType="com.entgroup.adms.model.system.AdSlot" >
+			<id column="id" property="id" />
+			<result column="video_id" property="videoId" />
+			<result column="video_position" property="videoPosition" />
+			<result column="scene_ids" property="sceneIds" />
+			<result column="person_ids" property="personIds" />
+			<result column="ad_id" property="adId" />
+			<result column="object_ids" property="objectIds" />
+			<result column="slot_label_ids" property="slotLabelIds" />
+			<result column="initial_label" property="initialLabel" />
+			<result column="created" property="created" />
+			<association property="video" javaType="com.entgroup.adms.model.system.Video">
+				<id property="id" column="vid"/>
+				<result property="name" column="name"/>
+			</association>
+			<association property="ad"
+						 javaType="com.entgroup.adms.model.system.Ad">
+				<id property="id" column="ad_id"/>
+				<result property="name" column="ad_name"/>
+				<result property="typeId" column="type_id"/>
+				<result property="styleId" column="style_id"/>
+				<result property="imagePath" column="image_path"/>
+			</association>
+		</collection>
+	</resultMap>
+	<!-- edited by mxy on 2017-03-27 15:23 end -->
+	
+	
+	<!-- 通过广告位中的场景ID获取场景集合   edited by liuxiaolong on 2017/4/14-->
+    <select id="selectSlotPersonByIds" parameterType="java.util.List" resultMap="BaseResultMap">
+      select sys_person.name from sys_person 
+      <where>
+		    sys_person.id in
+		    <foreach collection="list" item="id" open="(" close=")" separator=",">
+		     #{id} 
+		    </foreach>
+		</where>
+    </select>
+</mapper>

@@ -1,0 +1,7 @@
+target/*
+.myeclipse/*
+.settings/*
+.classpath
+.project
+.mymetadata
+/target/

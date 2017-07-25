@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AdReasonMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.AdReason">
+		<id column="id" property="id" />
+		<result column="ad_id" property="adId" />
+		<result column="reason_ids" property="reasonIds" />
+		<result column="other_reason" property="otherReason" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, ad_id AS adId, reason_ids AS reasonIds, other_reason AS otherReason
+    </sql>
+</mapper>

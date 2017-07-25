@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.HelpMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Help">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="publish_date" property="publishDate"/>
+        <result column="creator_id" property="creatorId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, title, content, publish_date AS publishDate,creator_id AS creatorId
+    </sql>
+
+    <!-- edited by xiaokun on 2017-04-14 20:25 begin -->
+    <select id="getAllHelps" parameterType="com.entgroup.adms.model.system.Help" resultMap="BaseResultMap">
+        SELECT *
+        FROM sys_help
+        <trim prefix="WHERE" prefixOverrides="AND |OR">
+            <if test="title != null">
+                title like CONCAT('%',#{title},'%')
+            </if>
+        </trim>
+    </select>
+    <!-- edited by xiaokun on 2017-04-14 20:25 end -->
+</mapper>

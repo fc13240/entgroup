@@ -1,0 +1,9 @@
+target/*
+logs/*
+.settings/*
+.externalToolBuilders/*
+.idea/*
+*.jar
+*.iml
+.project
+*.log

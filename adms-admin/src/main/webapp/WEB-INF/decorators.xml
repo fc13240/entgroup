@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<decorators defaultdir="/WEB-INF/layouts/">
+	<excludes>
+		<pattern>/resources/*</pattern>
+		<pattern>*login.jsp</pattern>
+	</excludes>
+
+	<decorator name="wrapper" page="wrapper.jsp">
+		<pattern>/*</pattern>
+	</decorator>
+
+	<!-- 定义不需要装饰的页面  -->
+	<decorator name="login" page="/WEB-INF/view/login.jsp" />
+	<decorator name="portal" page="/WEB-INF/view/portal/portal.jsp" />
+	<decorator name="product" page="/WEB-INF/view/portal/product.jsp" />
+	<decorator name="sdk" page="/WEB-INF/view/portal/sdk.jsp" />
+	<decorator name="news" page="/WEB-INF/view/portal/news.jsp" />
+	<decorator name="newsDetail" page="/WEB-INF/view/portal/newsDetail.jsp" />
+	<decorator name="help" page="/WEB-INF/view/portal/help.jsp" />
+	<decorator name="contact" page="/WEB-INF/view/portal/contact.jsp" />
+	<decorator name="about" page="/WEB-INF/view/portal/about.jsp" />
+</decorators>

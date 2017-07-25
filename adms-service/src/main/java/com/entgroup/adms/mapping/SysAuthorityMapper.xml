@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AuthorityMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Authority">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="type" property="type" />
+		<result column="authority_identity" property="authorityIdentity" />
+		<result column="icon" property="icon" />
+		<result column="icon_open" property="iconOpen" />
+		<result column="icon_close" property="iconClose" />
+		<result column="open" property="open" />
+		<result column="description" property="description" />
+		<result column="parent_id" property="parentId" />
+		<result column="deleted" property="deleted" />
+		<result column="remark" property="remark" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, type, authority_identity AS authorityIdentity, icon, icon_open AS iconOpen, icon_close AS iconClose, open, description, parent_id AS parentId, deleted, remark
+    </sql>
+</mapper>

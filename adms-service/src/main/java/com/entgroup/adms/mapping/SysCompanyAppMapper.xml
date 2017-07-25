@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.CompanyAppMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.CompanyApp">
+		<id column="id" property="id" />
+		<result column="app_package" property="appPackage" />
+		<result column="created" property="created" />
+		<result column="company_id" property="companyId" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, app_package AS appPackage, created, company_id AS companyId
+    </sql>
+
+</mapper>

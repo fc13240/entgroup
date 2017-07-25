@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.ProgramMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Program">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="type_id" property="typeId" />
+		<result column="company_id" property="companyId" />
+		<result column="source_id" property="sourceId" />
+		<result column="region" property="region" />
+		<result column="level_id" property="levelId" />
+		<result column="show_time" property="showTime" />
+		<result column="category_ids" property="categoryIds" />
+		<result column="category_names" property="categoryNames" />
+		<result column="directors" property="directors" />
+		<result column="actors" property="actors" />
+		<result column="created" property="created" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, type_id AS typeId, company_id AS companyId, source_id AS sourceId, region, level_id AS levelId, show_time AS showTime, category_ids AS categoryIds, category_names AS categoryNames, directors, actors, created
+    </sql>
+	<!-- edited by mxy on 2017-03-21 09:45 begin -->
+	<!--获取节目价格信息列表-->
+	<select id="getProgramPriceList" resultMap="getProgramPriceListMap"
+			parameterType="com.entgroup.adms.model.system.Program">
+		SELECT
+		pro.id,
+		pro.name,
+		pro.created,
+		pt.id AS pt_id,
+		pt.name AS pt_name,
+		com.id AS cid,
+		com.company_name,
+		com.short_name,
+		pl.id AS plid,
+		pl.name AS plname,
+		pl.price,
+		COUNT(DISTINCT video.id) AS v_num,
+		GROUP_CONCAT(DISTINCT video.id) AS v_ids,
+		COUNT(DISTINCT ads.id) AS ads_num,
+		GROUP_CONCAT(DISTINCT ads.id) AS ads_ids
+		FROM
+		(SELECT
+		*
+		FROM
+		sys_program pro
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="name != null">
+				AND pro.name like '%${name}%'
+			</if>
+			<if test="companyId !=null">
+				AND pro.company_id = #{companyId}
+			</if>
+			<if test="typeId !=null">
+				AND pro.type_id = #{typeId}
+			</if>
+			<if test="levelId !=null">
+				AND pro.level_id = #{levelId}
+			</if>
+		</trim>
+		<if test="orderBy !=null">
+			ORDER BY ${orderBy}
+		</if>
+		<if test="pageNum !=null and pageSize !=null">
+			LIMIT ${pageNum}, ${pageSize}
+		</if>
+		) pro
+		LEFT JOIN sys_program_type pt
+		ON pt.id = pro.type_id
+		LEFT JOIN sys_company com
+		ON com.id = pro.company_id
+		LEFT JOIN sys_program_level pl
+		ON pl.id = pro.level_id
+		LEFT JOIN sys_video video
+		ON pro.id = video.program_id
+		LEFT JOIN sys_ad_slot ads
+		ON video.id = ads.video_id
+		GROUP BY id
+		<if test="orderBy !=null">
+			ORDER BY ${orderBy}
+		</if>
+	</select>
+	<resultMap type="com.entgroup.adms.model.system.Program" id="getProgramPriceListMap" extends="BaseResultMap">
+		<result column="v_num" property="videoNum" />
+		<result column="v_ids" property="videoIds" />
+		<result column="ads_num" property="adSlotNum" />
+		<result column="ads_ids" property="adSlotIds" />
+		<association property="company" javaType="com.entgroup.adms.model.system.Company">
+			<id property="id" column="cid" />
+			<result property="companyName" column="company_name" />
+			<result property="shortName" column="short_name" />
+		</association>
+		<association property="programType" javaType="com.entgroup.adms.model.system.ProgramType">
+			<id property="id" column="pt_id" />
+			<result property="name" column="pt_name" />
+		</association>
+		<association property="programLevel"
+					 javaType="com.entgroup.adms.model.system.ProgramLevel">
+			<id property="id" column="plid" />
+			<result property="name" column="plname" />
+			<result property="price" column="price" />
+		</association>
+	</resultMap>
+	<!-- edited by mxy on 2017-03-21 10:06 end -->
+	<!-- edited by mxy on 2017-06-23 15:25 begin -->
+	<!--获取订单节目播放信息列表-->
+	<select id="getOrderProgramList" resultMap="getOrderProgramListMap">
+		SELECT
+		pro.id,
+		pro.`name`,
+		pro.company_id,
+		com.`company_name`,
+		com.`short_name`,
+		pro.type_id,
+		ptype.`name` AS type_name,
+		pro.`actors`,
+		COUNT(DISTINCT  vid.`id`) AS video_number,
+		pro.`show_time`,
+		SUM(vprn.`play_record_count`) AS play_number,
+		COUNT(DISTINCT ads.`id`) AS ad_slot_number,
+		vprn.`entry_time`,
+		opp.`id` AS `opp_id`,
+		opp.`deleted` AS `opp_deleted`,
+		ord.`id` AS `order_id`
+		FROM
+		`sys_program` AS pro
+		LEFT JOIN `sys_video` AS vid
+		ON vid.`program_id` = pro.`id`
+		LEFT JOIN (SELECT * FROM `sys_ad_slot`
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="adSlotAdId != null">
+				AND ad_id = #{adSlotAdId}
+			</if>
+			<if test="adSlotOrderId != null">
+				AND order_id = #{adSlotOrderId}
+			</if>
+		</trim>) AS ads
+		ON ads.`video_id` = vid.`id`
+		LEFT JOIN `sys_company` AS com
+		ON pro.`company_id` = com.`id`
+		LEFT JOIN `sys_program_type` AS ptype
+		ON pro.`type_id` = ptype.`id`
+		LEFT JOIN (SELECT * FROM `sys_video_play_record_note`
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<choose>
+				<when test="entryTimeStart == null and entryTimeEnd != null">
+					AND `entry_time` &lt; #{entryTimeEnd}
+				</when>
+				<when test="entryTimeStart != null and entryTimeEnd == null">
+					AND `entry_time` &gt; #{entryTimeStart}
+				</when>
+				<when test="entryTimeStart != null and entryTimeEnd != null">
+					AND (`entry_time` BETWEEN #{entryTimeStart} AND #{entryTimeEnd})
+				</when>
+				<otherwise></otherwise>
+			</choose>
+		</trim>) AS vprn
+		ON vprn.`video_id` = vid.`id`
+		LEFT JOIN (SELECT * FROM `sys_order_program_preview`
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="orderId !=null">
+				AND order_id = #{orderId}
+			</if>
+		</trim>) AS opp
+		ON opp.`program_id` = pro.`id`
+		LEFT JOIN `sys_ad_order` AS ord
+		ON opp.`order_id` = ord.`id`
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="name != null">
+				AND pro.name LIKE '%${name}%'
+			</if>
+			<if test="companyIds !=null">
+				AND pro.company_id IN (${companyIds})
+			</if>
+			<if test="typeIds !=null">
+				AND pro.type_id IN (${typeIds})
+			</if>
+			<if test="selected !=null">
+				AND opp.deleted != #{selected}
+			</if>
+		</trim>
+		GROUP BY pro.`id`
+	</select>
+	<resultMap type="com.entgroup.adms.model.system.Program" id="getOrderProgramListMap" extends="BaseResultMap">
+		<result column="opp_id" property="oppId" />
+		<result column="opp_deleted" property="oppDeleted" />
+		<result column="order_id" property="orderId" />
+		<result column="video_number" property="videoNum" />
+		<result column="play_number" property="playNum" />
+		<result column="ad_slot_number" property="adSlotNum" />
+		<association property="company" javaType="com.entgroup.adms.model.system.Company">
+			<id property="id" column="company_id" />
+			<result property="companyName" column="company_name" />
+			<result property="shortName" column="short_name" />
+		</association>
+		<association property="programType" javaType="com.entgroup.adms.model.system.ProgramType">
+			<id property="id" column="type_id" />
+			<result property="name" column="type_name" />
+		</association>
+	</resultMap>
+</mapper>

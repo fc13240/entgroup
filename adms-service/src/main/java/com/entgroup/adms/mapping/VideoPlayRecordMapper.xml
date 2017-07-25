@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.VideoPlayRecordMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.VideoPlayRecord">
+		<result column="id" property="id" />
+		<result column="video_id" property="videoId" />
+		<result column="platform_id" property="platformId" />
+		<result column="source_id" property="sourceId" />
+		<result column="device_id" property="deviceId" />
+		<result column="play_time" property="playTime" />
+		<result column="device_platform" property="devicePlatform" />
+		<result column="ip" property="ip" />
+		<result column="region_code" property="regionCode" />
+		<result column="city_code" property="cityCode" />
+		<result column="county_code" property="countyCode" />
+		<result column="browser" property="browser" />
+		<result column="device_type" property="deviceType" />
+		<result column="pn" property="pn" />
+		<result column="net" property="net" />
+		<result column="osv" property="osv" />
+		<result column="bn" property="bn" />
+		<result column="sw" property="sw" />
+		<result column="sh" property="sh" />
+		<result column="sdk_version" property="sdkVersion" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, video_id AS videoId, platform_id AS platformId, source_id AS sourceId, device_id AS deviceId, play_time AS playTime, device_platform AS devicePlatform, ip, region_code AS regionCode, city_code AS cityCode, county_code AS countyCode, browser, device_type AS deviceType, pn, net, osv, bn, sw, sh, sdk_version AS sdkVersion
+    </sql>
+
+</mapper>

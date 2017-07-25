@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.NoticeMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Notice">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="to_uid" property="toUid"/>
+        <result column="type" property="type"/>
+        <result column="read" property="read"/>
+        <result column="publish_date" property="publishDate"/>
+        <result column="company_id" property="companyId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, title, content, publish_date AS publishDate,type,read,to_uid as toUid,company_id as companyId
+    </sql>
+
+    <!-- edited by xiaokun on 2017-03-31 09:02 begin -->
+    <!--获取系统通知-->
+    <select id="getAllNotices" parameterType="java.util.Map" resultMap="BaseResultMap">
+        SELECT
+        notice.id,
+        notice.title,
+        notice.content,
+        notice.to_uid,
+        notice.read,
+        notice.type,
+        notice.company_id,
+        notice.publish_date AS publishDate
+        FROM sys_notice notice
+        <trim prefix="WHERE" prefixOverrides="AND |OR">
+            <if test="userId != null">
+                AND notice.type = 1 AND notice.to_uid = #{userId}
+            </if>
+            <if test="companyId != null">
+                AND notice.company_id = #{companyId}
+            </if>
+            <if test="type != null">
+                AND notice.type = #{type}
+            </if>
+        </trim>
+    </select>
+    <!-- edited by xiaokun on 2017-03-31 09:02 end -->
+</mapper>

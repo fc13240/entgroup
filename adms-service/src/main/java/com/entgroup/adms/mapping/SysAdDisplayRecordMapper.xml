@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AdDisplayRecordMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.AdDisplayRecord">
+		<id column="id" property="id" />
+		<result column="slot_id" property="slotId" />
+		<result column="ad_id" property="adId" />
+		<result column="program_id" property="programId" />
+		<result column="order_id" property="orderId" />
+		<result column="device_id" property="deviceId" />
+		<result column="display_time" property="displayTime" />
+		<result column="device_platform" property="devicePlatform" />
+		<result column="ip" property="ip" />
+		<result column="device_type" property="deviceType" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, slot_id AS slotId, ad_id AS adId, program_id AS programId, order_id AS orderId, device_id AS deviceId, display_time AS displayTime, device_platform AS devicePlatform, ip, device_type AS deviceType
+    </sql>
+  
+
+  
+</mapper>

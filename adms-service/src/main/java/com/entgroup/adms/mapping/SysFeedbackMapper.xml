@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.FeedbackMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Feedback">
+		<id column="id" property="id" />
+		<result column="content" property="content" />
+		<result column="publish_date" property="publishDate" />
+		<result column="user_id" property="userId" />
+		<result column="read" property="read" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, content, publish_date AS publishDate, user_id AS userId, read
+    </sql>
+	
+	<!-- edited by xiaokun on 2017-03-30 09:40 begin -->
+	<!-- 查询反馈列表信息 -->
+	<resultMap id="AllFeedbackMap" type="com.entgroup.adms.model.system.Feedback" extends="BaseResultMap">
+		<association property="user" javaType="com.entgroup.adms.model.system.User">
+			<id property="id" column="user_id"/>
+			<result property="loginName" column="login_name"/>
+			<result property="realName" column="real_name"/>
+			<result property="companyId" column="company_id"/>
+		</association>
+		<association property="company" javaType="com.entgroup.adms.model.system.Company">
+			<id property="id" column="company_id"/>
+			<result property="companyName" column="company_name"/>
+		</association>
+	</resultMap>
+
+	<select id="getAllFeedbacks" resultMap="AllFeedbackMap" parameterType="com.entgroup.adms.model.system.Feedback">
+		SELECT
+		f.id,
+		f.content,
+		f.publish_date,
+		f.user_id,
+		f.read,
+
+		u.id AS user_id,
+		u.login_name AS login_name,
+		u.real_name AS real_name,
+		u.company_id AS company_id,
+
+		c.id AS company_id,
+		c.company_name AS company_name
+		FROM sys_feedback f
+		LEFT JOIN sys_user u ON f.user_id = u.id
+		LEFT JOIN sys_company c ON u.company_id = c.id
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+		<if test="id != null">
+			and f.id = #{id}
+		</if>
+		<if test="userId != null">
+			and f.user_id = #{userId}
+		</if>
+		<if test="company != null">
+			and c.id = #{company.id}
+		</if>
+		</trim>
+		ORDER BY f.publish_date DESC
+	</select>
+	<!-- edited by xiaokun on 2017-03-30 09:40 end -->
+</mapper>

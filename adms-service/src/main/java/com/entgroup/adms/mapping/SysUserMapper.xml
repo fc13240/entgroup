@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.UserMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.User">
+        <id column="id" property="id"/>
+        <result column="login_name" property="loginName"/>
+        <result column="password" property="password"/>
+        <result column="real_name" property="realName"/>
+        <result column="mobile" property="mobile"/>
+        <result column="phone_number" property="phoneNumber"/>
+        <result column="email" property="email"/>
+        <result column="qq" property="qq"/>
+        <result column="company_id" property="companyId"/>
+        <result column="admin" property="admin"/>
+        <result column="enabled" property="enabled"/>
+        <result column="deleted" property="deleted"/>
+        <result column="remark" property="remark"/>
+        <result column="salt" property="salt"/>
+        <result column="last_login_date" property="lastLoginDate"/>
+        <result column="manager_id" property="managerId"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="created" property="created"/>
+        <result column="modifier_id" property="modifierId"/>
+        <result column="updated" property="updated"/>
+        <result column="head_portrait" property="headPortrait"/>
+        <result column="last_login_ip" property="lastLoginIp"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, login_name AS loginName, password, real_name AS realName, mobile, phone_number AS phoneNumber, email, qq, company_id AS companyId, admin, enabled, deleted, remark, salt, last_login_date AS lastLoginDate, manager_id AS managerId, creator_id AS creatorId, created, modifier_id AS modifierId, updated, head_portrait AS headPortrait, last_login_ip AS lastLoginIp
+    </sql>
+
+    <!--查询用户信息-->
+    <resultMap type="com.entgroup.adms.model.system.User" id="userRoleMap" extends="BaseResultMap">
+        <association property="company" javaType="com.entgroup.adms.model.system.Company">
+            <id property="id" column="company_id"/>
+            <result property="companyName" column="company_name"/>
+            <result property="shortName" column="short_name"/>
+            <result property="companyType" column="company_type"/>
+        </association>
+        <collection property="roles" javaType="List" ofType="com.entgroup.adms.model.system.Role">
+            <id property="id" column="role_id"/>
+            <result property="name" column="role_name"/>
+            <result property="roleIdentity" column="role_identity"/>
+        </collection>
+        <collection property="authorities" javaType="List" ofType="com.entgroup.adms.model.system.Authority">
+            <id property="id" column="authority_id"/>
+            <result property="name" column="authority_name"/>
+            <result property="authorityIdentity" column="authority_identity"/>
+        </collection>
+    </resultMap>
+
+    <select id="findUserInfoByLoginName" resultMap="userRoleMap" parameterType="java.lang.String">
+        SELECT
+        sys_user.id,
+        sys_user.login_name,
+        sys_user. password,
+        sys_user.real_name,
+        sys_user.mobile,
+        sys_user.phone_number,
+        sys_user.email,
+        sys_user.qq,
+        sys_user.company_id,
+        sys_user.admin,
+        sys_user.enabled,
+        sys_user.deleted,
+        sys_user.remark,
+        sys_user.salt,
+        sys_user.last_login_date,
+        sys_user.manager_id,
+        sys_user.creator_id,
+        sys_user.created,
+        sys_user.modifier_id,
+        sys_user.updated,
+        sys_user.last_login_ip,
+        sys_user.head_portrait,
+        sys_role.id AS role_id,
+        sys_role.`name` AS role_name,
+        sys_role.`role_identity` AS `role_identity`,
+        sys_authority.`id` AS `authority_id`,
+        sys_authority.`name` AS `authority_name`,
+        sys_authority.`authority_identity` AS `authority_identity`,
+        sys_company.id AS company_id,
+        sys_company.company_name AS company_name,
+        sys_company.short_name AS short_name,
+        sys_company.company_type AS company_type
+        FROM
+        sys_user
+        JOIN sys_user_role ON sys_user_role.user_id = sys_user.id
+        JOIN sys_role ON sys_user_role.role_id = sys_role.id
+        LEFT JOIN sys_role_authority ON sys_role_authority.role_id = sys_role.id
+        LEFT JOIN sys_authority ON sys_authority.id = sys_role_authority.authority_id
+        LEFT JOIN sys_company ON sys_user.company_id = sys_company.id
+        WHERE
+        sys_user.login_name = #{loginName,jdbcType=VARCHAR}
+        AND sys_user.deleted = 0
+        AND sys_user.enabled = 1
+    </select>
+
+
+    <!-- 查询用户列表 begin -->
+    <resultMap type="com.entgroup.adms.model.system.User" id="allUserMap" extends="BaseResultMap">
+        <association property="company" javaType="com.entgroup.adms.model.system.Company">
+            <id property="id" column="company_id" />
+            <result property="companyName" column="company_name" />
+            <result property="shortName" column="short_name" />
+        </association>
+        <collection property="role" javaType="com.entgroup.adms.model.system.Role">
+            <id property="id" column="role_id" />
+            <result property="name" column="role_name" />
+            <result property="roleLevel" column="role_level" />
+        </collection>
+    </resultMap>
+    <select id="getAllUsers" resultMap="allUserMap" parameterType="com.entgroup.adms.model.system.User">
+        SELECT
+        u.id,
+        u.login_name,
+        u.password,
+        u.real_name,
+        u.mobile,
+        u.phone_number,
+        u.email,
+        u.qq,
+        u.company_id,
+        u.admin,
+        u.enabled,
+        u.deleted,
+        u.remark,
+        u.salt,
+        u.last_login_date,
+        u.manager_id,
+        u.creator_id,
+        u.created,
+        u.modifier_id,
+        u.updated,
+        u.head_portrait,
+        u.last_login_ip,
+
+        c.id AS company_id,
+        c.company_name AS company_name,
+
+        r.id AS role_id,
+        r.name AS role_name,
+        r.role_level AS role_level
+        FROM
+        sys_user u
+        LEFT JOIN sys_company c ON u.company_id = c.id
+        LEFT JOIN sys_user_role ur ON u.id = ur.user_id
+        LEFT JOIN sys_role r ON ur.role_id = r.id
+        <trim prefix="WHERE" prefixOverrides="AND |OR">
+            <if test="id != null">
+                and u.id = #{id}
+            </if>
+            <if test="loginName != null and loginName!=''">
+                and u.login_name like CONCAT('%',#{loginName},'%')
+                or u.email like CONCAT('%',#{loginName},'%')
+                or u.mobile like CONCAT('%',#{loginName},'%')
+            </if>
+            <if test="email != null and email!=''">
+                and u.email like CONCAT('%',#{email},'%')
+            </if>
+            <if test="companyId != null">
+                and u.company_id = #{companyId}
+            </if>
+            <if test="creatorId != null">
+                and u.creator_id = #{creatorId}
+            </if>
+            <if test="managerId != null">
+                and u.manager_id = #{managerId}
+            </if>
+            <if test="deleted != null">
+                and u.deleted = #{deleted}
+            </if>
+            <if test="enabled != null">
+                and u.enabled = #{enabled}
+            </if>
+            <if test="roleLevel != null">
+                and r.role_level = #{roleLevel}
+            </if>
+        </trim>
+        order by u.id DESC
+    </select>
+    <!-- 查询用户列表 end -->
+</mapper>

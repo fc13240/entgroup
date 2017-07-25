@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AdStyleMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.AdStyle">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="price" property="price" />
+		<result column="price_unit" property="priceUnit" />
+	</resultMap>
+
+	<!-- 通用查询结果列 -->
+	<sql id="Base_Column_List">
+		id, name, price, price_unit AS priceUnit
+	</sql>
+
+
+	<!-- 根据用户id获取对应的样式下拉框 开始 * guofei-->
+	<resultMap type="com.entgroup.adms.dto.AdAndStyleByCompanyDTO"
+		id="selectStyleByCompanyIdResultMap">
+		<result column="style_id" property="adStyleId" />
+		<result column="style_name" property="adStyleName" />
+	</resultMap>
+	<select id="selectStyleByCompanyId" parameterType="java.lang.String"
+		resultMap="selectStyleByCompanyIdResultMap">
+		SELECT DISTINCT
+		sas.`id` AS style_id,
+		sas.`name` AS style_name
+		FROM
+		sys_ad sa
+		LEFT JOIN sys_order_ad soa
+		ON sa.`id` = soa.`ad_id`
+		LEFT JOIN sys_ad_style sas
+		ON sas.`id` = sa.`style_id`
+		<where>
+			sa.`status`=2
+			<if test="companyId!=null">
+				AND sa.`company_id` = #{companyId}
+			</if>
+			<if test="adOrderId!=null">
+				AND soa.`order_id` = #{adOrderId}
+			</if>
+		</where>
+	</select>
+	<!-- 根据用户id获取对应的样式下拉框 结束 -->
+
+	<!-- 根据订单id获取对应的广告样式 开始  guofei-->
+	<select id="selectAdStyle" parameterType="java.lang.String"
+		resultMap="BaseResultMap">
+		SELECT DISTINCT sys_ad_style.`id`, sys_ad_style.`name`,
+		sys_ad_style.`price`,
+		sys_ad_style.`price_unit` AS priceUnit
+		FROM
+		sys_ad_style
+		LEFT JOIN sys_ad
+		ON sys_ad_style.`id` = sys_ad.`style_id`
+		LEFT JOIN sys_order_ad ON
+		sys_order_ad.`ad_id` = sys_ad.`id`
+		<where>
+			sys_order_ad.`deleted` = 0
+			AND
+			sys_order_ad.`order_id`=#{orderId}
+		</where>
+	</select>
+	<!-- 根据订单id获取对应的广告样式 结束 -->
+
+</mapper>

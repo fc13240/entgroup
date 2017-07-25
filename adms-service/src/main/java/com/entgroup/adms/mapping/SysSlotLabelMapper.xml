@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.SlotLabelMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.SlotLabel">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="parent_id" property="parentId" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, parent_id AS parentId
+    </sql>
+    
+    <!-- 通过广告位中的标签ID获取标签集合   -->
+    <select id="selectSlotLableByIds" parameterType="java.util.List" resultMap="BaseResultMap">
+      select sys_slot_label.name from sys_slot_label 
+      <where>
+		    sys_slot_label.id in
+		    <foreach collection="list" item="id" open="(" close=")" separator=",">
+		     #{id} 
+		    </foreach>
+		</where>
+    </select>
+</mapper>

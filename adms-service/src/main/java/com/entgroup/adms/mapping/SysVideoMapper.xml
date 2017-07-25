@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.VideoMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Video">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="company_id" property="companyId" />
+		<result column="source_id" property="sourceId" />
+		<result column="program_id" property="programId" />
+		<result column="match_status" property="matchStatus" />
+		<result column="extra_match_info" property="extraMatchInfo" />
+		<result column="duration" property="duration" />
+		<result column="web_url" property="webUrl" />
+		<result column="created" property="created" />
+		<result column="updated" property="updated" />
+		<result column="status_select" property="statusSelect" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, company_id AS companyId, source_id AS sourceId, program_id AS programId, match_status AS matchStatus, extra_match_info AS extraMatchInfo, duration, web_url AS webUrl, created, updated, status_select AS statusSelect
+    </sql>
+
+    <!-- edited by mxy on 2017-03-20 15:27 begin -->
+	<!--获取视频（列表）识别信息-->
+	<select id="getMatch4VideoList" resultMap="getVideoListMap" parameterType="com.entgroup.adms.model.system.Video">
+		SELECT
+		video.id,
+		video.created,
+		video.updated,
+		video.name,
+		pro.id AS pid,
+		pro.name AS  pname,
+		pro.type_id AS pt_id,
+		pt.id AS pt_id,
+		pt.name AS pt_name,
+		com.id AS cid,
+		com.company_name,
+		com.short_name,
+		video.status_select,
+		GROUP_CONCAT(DISTINCT ads.video_position) AS ads,
+		GROUP_CONCAT(DISTINCT srr.video_position) AS srr,
+        GROUP_CONCAT(DISTINCT prr.video_position) AS prr
+		FROM
+		sys_video video
+		LEFT JOIN sys_program pro
+		ON pro.id = video.program_id
+		LEFT JOIN sys_program_type pt
+		ON pt.id = pro.type_id
+		LEFT JOIN sys_company com
+		ON com.id = video.company_id
+		LEFT JOIN sys_scene_recognition_result srr
+		ON video.id = srr.video_id
+        LEFT JOIN sys_person_recognition_result prr
+		ON video.id = prr.video_id
+		LEFT JOIN sys_ad_slot ads
+		ON video.id = ads.video_id
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="name != null">
+				AND video.name like '%${name}%'
+			</if>
+			<if test="statusSelect !=null">
+				AND video.status_select = #{statusSelect}
+			</if>
+			<if test="companyId !=null">
+				AND video.company_id = #{companyId}
+			</if>
+			<if test="typeId != null">
+				AND pro.type_id = #{typeId}
+			</if>
+		</trim>
+		GROUP BY video.id
+	</select>
+	<resultMap type="com.entgroup.adms.model.system.Video" id="getVideoListMap" extends="BaseResultMap">
+		<result column="ads" property="ads" />
+		<result column="srr" property="srr" />
+        <result column="prr" property="prr" />
+		<result column="ads_num" property="adsNum" />
+		<result column="ads_ids" property="adsIds" />
+        <result column="ads_ils" property="adsILs" />
+		<result column="ads_sids" property="adsSids" />
+		<result column="ads_pids" property="adsPids" />
+		<result column="ads_oids" property="adsOids" />
+		<result column="ads_lids" property="adsLids" />
+		<association property="program" javaType="com.entgroup.adms.model.system.Program">
+			<id property="id" column="pid" />
+			<result property="name" column="pname" />
+		</association>
+		<association property="company" javaType="com.entgroup.adms.model.system.Company">
+			<id property="id" column="cid" />
+			<result property="companyName" column="company_name" />
+			<result property="shortName" column="short_name" />
+		</association>
+		<association property="programType" javaType="com.entgroup.adms.model.system.ProgramType">
+			<id property="id" column="pt_id" />
+			<result property="name" column="pt_name" />
+		</association>
+	</resultMap>
+	<!-- edited by mxy on 2017-03-20 19:53 end -->
+	<!-- edited by mxy on 2017-03-21 14:43 begin -->
+	<!--获取视频（列表）广告位信息-->
+	<select id="getAds4VideoList" resultMap="getVideoListMap" parameterType="com.entgroup.adms.model.system.Video">
+		SELECT
+		video.id,
+		video.created,
+		video.updated,
+		video.name,
+		pro.id AS pid,
+		pro.name AS pname,
+		pt.id AS pt_id,
+		pt.name AS pt_name,
+		com.id AS cid,
+		com.company_name,
+		com.short_name,
+		video.status_select,
+		COUNT(DISTINCT ads.id) AS ads_num,
+		GROUP_CONCAT(DISTINCT ads.id) AS ads_ids,
+		GROUP_CONCAT(DISTINCT ads.video_position) AS ads,
+		GROUP_CONCAT(DISTINCT ads.initial_label) AS ads_ils,
+		GROUP_CONCAT(DISTINCT ads.scene_ids) AS ads_sids,
+		GROUP_CONCAT(DISTINCT ads.person_ids) AS ads_pids,
+		GROUP_CONCAT(DISTINCT ads.object_ids) AS ads_oids,
+		GROUP_CONCAT(DISTINCT ads.slot_label_ids) AS ads_lids
+		FROM
+		sys_video video
+		LEFT JOIN sys_program pro
+		ON pro.id = video.program_id
+		LEFT JOIN sys_program_type pt
+		ON pt.id = pro.type_id
+		LEFT JOIN sys_company com
+		ON com.id = pro.company_id
+		LEFT JOIN sys_ad_slot ads
+		ON video.id = ads.video_id
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="name != null">
+				AND video.name like '%${name}%'
+			</if>
+			<if test="statusSelect !=null">
+				AND video.status_select = #{statusSelect}
+			</if>
+			<if test="companyId !=null">
+				AND video.company_id = #{companyId}
+			</if>
+			<if test="typeId != null">
+				AND pro.type_id = #{typeId}
+			</if>
+		</trim>
+		GROUP BY video.id
+	</select>
+	<!-- edited by mxy on 2017-03-21 15:05 end -->
+	<!-- edited by mxy on 2017-04-24 10:32 begin -->
+	<!--根据VideoIds获取视频（列表）识别信息-->
+	<select id="getMatchByVideoIds" resultMap="getVideoListMap">
+		SELECT
+		video.id,
+		GROUP_CONCAT(DISTINCT srr.video_position) AS srr,
+		GROUP_CONCAT(DISTINCT prr.video_position) AS prr
+		FROM
+		sys_video video
+		LEFT JOIN sys_scene_recognition_result srr
+		ON video.id = srr.video_id
+		LEFT JOIN sys_person_recognition_result prr
+		ON video.id = prr.video_id
+		<if test="videoIds !=null">
+			WHERE video.id IN (${videoIds})
+		</if>
+		GROUP BY video.id
+	</select>
+	<!-- edited by mxy on 2017-04-24 10:34 end -->
+</mapper>

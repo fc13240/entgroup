@@ -1,0 +1,714 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AdSlotMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.AdSlot">
+		<id column="id" property="id" />
+		<result column="video_id" property="videoId" />
+		<result column="video_position" property="videoPosition" />
+		<result column="scene_ids" property="sceneIds" />
+		<result column="person_ids" property="personIds" />
+		<result column="ad_id" property="adId" />
+		<result column="object_ids" property="objectIds" />
+		<result column="slot_label_ids" property="slotLabelIds" />
+		<result column="created" property="created" />
+		<result column="image_server" property="imageServer" />
+		<result column="order_id" property="orderId" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, video_id AS videoId, video_position AS videoPosition, scene_ids AS sceneIds, person_ids AS personIds,
+        ad_id AS adId, object_ids AS objectIds, slot_label_ids AS slotLabelIds, created, image_server AS imageServer,\
+        order_id AS orderId
+    </sql>
+	<!-- edited by mxy on 2017-03-27 10:37 begin -->
+	<!--根据获取广告位相关标签-->
+	<select id="getLabel4AdSlot"
+			resultMap="getLabel4AdSlotMap" parameterType="com.entgroup.adms.model.system.AdSlot">
+		SELECT
+		ads.id,
+		ads.video_position,
+		ads.initial_label,
+		ads.created,
+		ads.scene_ids,
+		ads.person_ids,
+		ads.object_ids,
+		ads.slot_label_ids,
+		ads.image_server,
+		video.id AS vid,
+		video.name,
+		scene.id AS sid,
+		scene.name AS sname,
+		scene.scene_identify,
+		person.id AS pid,
+		person.name AS pname,
+		object.id AS oid,
+		object.name AS oname,
+		object.object_identify,
+		label.id AS lid,
+		label.name AS lname,
+		ad.id AS ad_id,
+		ad.name AS ad_name,
+		ad.type_id,
+		ad.style_id,
+		ad.image_path
+		FROM
+		(SELECT
+		*
+		FROM
+		sys_ad_slot ads
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="id !=null">
+				AND ads.id = #{id}
+			</if>
+			<if test="videoId != null">
+				AND ads.video_id = #{videoId}
+			</if>
+			<if test="adId !=null">
+				AND ads.ad_id = #{adId}
+			</if>
+			<if test="sceneId !=null">
+				AND FIND_IN_SET(#{sceneId}, ads.scene_ids)
+			</if>
+			<if test="personId !=null">
+				AND FIND_IN_SET(#{personId}, ads.person_ids)
+			</if>
+			<if test="objectId !=null">
+				AND FIND_IN_SET(#{objectId}, ads.object_ids)
+			</if>
+			<if test="slotLabelId !=null">
+				AND FIND_IN_SET(#{slotLabelId}, ads.slot_label_ids)
+			</if>
+		</trim>
+		) ads
+		LEFT JOIN sys_video video
+		ON video.id = ads.video_id
+		LEFT JOIN sys_ad ad
+		ON ad.id = ads.ad_id
+		LEFT JOIN sys_scene scene
+		ON FIND_IN_SET(scene.id, ads.scene_ids)
+		LEFT JOIN sys_person person
+		ON FIND_IN_SET(person.id, ads.person_ids)
+		LEFT JOIN sys_object object
+		ON FIND_IN_SET(object.id, ads.object_ids)
+		LEFT JOIN sys_slot_label label
+		ON FIND_IN_SET(label.id, ads.slot_label_ids)
+		ORDER BY id ASC
+	</select>
+	<resultMap type="com.entgroup.adms.model.system.AdSlot" id="getLabel4AdSlotMap" extends="BaseResultMap">
+		<id column="id" property="id" />
+		<association property="video"
+					 javaType="com.entgroup.adms.model.system.Video">
+			<id property="id" column="vid" />
+			<result property="name" column="name" />
+		</association>
+		<association property="ad"
+					 javaType="com.entgroup.adms.model.system.Ad">
+			<id property="id" column="ad_id"/>
+			<result property="name" column="ad_name"/>
+			<result property="typeId" column="type_id"/>
+			<result property="styleId" column="style_id"/>
+			<result property="imagePath" column="image_path"/>
+		</association>
+		<collection property="scenes" ofType="com.entgroup.adms.model.system.Scene" >
+			<id property="id" column="sid" />
+			<result property="name" column="sname" />
+			<result property="sceneIdentify" column="scene_identify" />
+		</collection>
+		<collection property="persons" ofType="com.entgroup.adms.model.system.Person" >
+			<id property="id" column="pid" />
+			<result property="name" column="pname" />
+		</collection>
+		<collection property="objects" ofType="com.entgroup.adms.model.system.RecognitionObject" >
+			<id property="id" column="oid" />
+			<result property="name" column="oname" />
+			<result property="objectIdentify" column="object_identify" />
+		</collection>
+		<collection property="slotLabels" ofType="com.entgroup.adms.model.system.SlotLabel" >
+			<id property="id" column="lid" />
+			<result property="name" column="lname" />
+		</collection>
+	</resultMap>
+	<!-- edited by mxy on 2017-03-27 11:48 end -->
+
+
+    <!-- 投放广告位列表   liuxiaolong begin-->
+    
+    <select id="selectAdSlotPage"  resultMap="adSlotDeliveMap" >
+        SELECT 
+        tab.id ,
+		tab.video_position ,
+		tab.ad_slot_id ,
+		tab.label_name ,
+		tab.video_name ,
+		tab.video_id ,
+		tab.program_type ,
+		tab.video_platform 
+		 FROM (
+		SELECT 
+		a.`id` ,
+		a.`video_position` , 
+		a.`slot_label_ids` ,
+		a.`scene_ids` ,
+		a.`person_ids` ,
+		a.`id` AS ad_slot_id , 
+		sys_slot_label.`name` AS label_name , 
+		sys_video.`name` AS video_name , 
+		sys_video.id AS video_id , 
+		sys_program_type.`name` AS program_type, 
+		sys_company.`company_name` AS video_platform ,
+		sys_program_level.`id` AS program_level_id ,
+		sys_company.`id` AS company_id ,
+		sys_person.`id` AS person_id,
+		sys_scene.`id` AS scene_id,
+		sys_program_type.`id` AS program_type_id,
+		sys_slot_label.id AS slot_label_id,
+		(SELECT COUNT(sys_ad.`id`) FROM sys_ad WHERE sys_ad.`id` = a.`ad_id` ) AS adslot_ad_num 
+		FROM sys_ad_slot a 
+		LEFT JOIN sys_slot_label ON FIND_IN_SET(sys_slot_label.`id`,a.`slot_label_ids`) 
+		LEFT JOIN sys_video ON a.`video_id` = sys_video.`id` 
+		LEFT JOIN sys_program ON sys_program.`id` = sys_video.`program_id` 
+		LEFT JOIN sys_program_level ON sys_program_level.`id` = sys_program.`level_id` 
+		LEFT JOIN sys_program_type ON sys_program_type.`id` = sys_program.`type_id` 
+		LEFT JOIN sys_company ON sys_program.`company_id` = sys_company.`id` AND sys_company.`company_type`=1 
+		LEFT JOIN sys_scene ON  FIND_IN_SET(sys_scene.`id`,a.`scene_ids`) 
+		LEFT JOIN sys_person ON FIND_IN_SET(sys_person.`id`,a.`person_ids`) 
+		LEFT JOIN 
+		(
+		SELECT sys_video.`id` AS vid ,COUNT(sys_ad_slot.id) AS ad_slot_num ,COUNT(sys_ad.`id`) AS ad_num  FROM sys_ad_slot 
+		LEFT JOIN sys_video ON sys_video.id = sys_ad_slot.`video_id` 
+		LEFT JOIN sys_ad ON sys_ad.`id` = sys_ad_slot.`ad_id` 
+		GROUP BY sys_video.id
+		) con ON con.vid = sys_video.`id`
+		LEFT JOIN sys_ad ON sys_ad.`id` = a.`ad_id`
+		WHERE  con.ad_slot_num != con.ad_num GROUP BY a.id  ) tab 
+		<where>
+		       tab.adslot_ad_num=0
+		    <if test="programLevelId != null and programLevelId != ''  ">
+		       and  tab.program_level_id  = #{programLevelId}
+		    </if>
+		    <if test="videoName != null and videoName != '' ">
+		       AND tab.video_name  like CONCAT('%',#{videoName},'%')
+		    </if>
+		    <if test="videoCompanyId != null and videoCompanyId != ''  ">
+		        AND tab.company_id  = #{videoCompanyId}
+		    </if>
+		    <if test="personId != null and personId != ''  ">
+		        AND tab.person_id = #{personId}
+		    </if>
+		    <if test="sceneId != null and sceneId != ''  ">
+		        and tab.scene_id  = #{sceneId}
+		    </if>
+		    <if test=" videoTypeId != null and videoTypeId != ''  ">
+		        and tab.program_type_id  = #{ videoTypeId }
+		    </if>
+		    <if test="labelId != null and labelId != ''  ">
+		        and tab.slot_label_id  = #{labelId} 
+		    </if>
+		    ORDER BY tab.video_id,tab.video_position
+		</where>
+    </select>
+
+	<resultMap type="com.entgroup.adms.dto.AdSlotOfAdDTO" id="adSlotDeliveMap">
+		<id property="adSlotId" column="ad_slot_id"/>
+		<id property="adId" column="ad_id"/>
+		<id property="videoId" column="video_id"/>
+		<result property="adName" column="ad_name"/>
+		<result property="videoPosition" column="video_position"/>
+		<result property="videoName" column="video_name"/>
+		<result property="videoPlatform" column="video_platform"/>
+		<result property="programType" column="program_type"/>
+		<result property="startTime" column="start_time"/>
+		<result property="orderCompany" column="order_company"/>
+		<result property="styleName" column="style_name"/>
+		<result property="typeName" column="type_name"/>
+	</resultMap>
+    <!-- 投放广告位列表   liuxiaolong end-->
+    
+     <!-- 视频的广告位列表   liuxiaolong begin-->
+     <resultMap type="com.entgroup.adms.dto.VideoAdSlotDTO" id="videoAdSlotMap">
+         <id property="adId"  column="ad_id"/>
+         <id property="adSlotId"  column="ad_slot_id"/>
+         <result property="videoPosition" column="video_position"/>
+         <result property="adName" column="ad_name"/>
+         <collection property="slotLabels" ofType="com.entgroup.adms.model.system.SlotLabel" >
+			<result property="name" column="label_name" />
+		</collection>
+		<collection property="scenes" ofType="com.entgroup.adms.model.system.Scene" >
+			<result property="name" column="scene_name" />
+		</collection>
+		<collection property="persons" ofType="com.entgroup.adms.model.system.Person" >
+			<result property="name" column="person_name" />
+		</collection>
+     </resultMap>
+     
+    <select id="selectAdSlotSingle" resultMap="videoAdSlotMap" parameterType="java.lang.Long">
+		SELECT 
+		sys_ad_slot.id AS ad_slot_id,
+		sys_ad_slot.ad_id,
+		sys_ad_slot.`video_position` ,
+		sys_ad.`name` AS ad_name ,
+		sys_slot_label.`name` AS label_name ,
+		sys_scene.`name` AS scene_name ,
+		sys_person.name AS person_name 
+		FROM 
+		sys_ad_slot
+		LEFT JOIN sys_ad ON sys_ad_slot.`ad_id` = sys_ad.`id` 
+		LEFT JOIN sys_video ON sys_video.`id` = sys_ad_slot.`video_id`
+		LEFT JOIN sys_slot_label ON FIND_IN_SET(sys_slot_label.`id` ,sys_ad_slot.`slot_label_ids`)
+		LEFT JOIN sys_scene ON FIND_IN_SET(sys_scene.`id`,sys_ad_slot.`scene_ids`)
+		LEFT JOIN sys_person ON FIND_IN_SET(sys_person.`id`,sys_ad_slot.`person_ids`)
+		<where>
+		    sys_video.`id` = #{videoId}
+		</where>
+		order by sys_ad_slot.`video_position` 
+    </select>
+    <!-- 视频的广告位列表   liuxiaolong end-->
+    <!-- 查询选中的广告位投放的列表  liuxiaolong begin-->
+    <select id="selectAdSlotByIds" parameterType="java.util.List" resultMap="adSlotDeliveMap" >
+        SELECT 
+		a.`video_position` ,
+		sys_slot_label.`name` AS label_name ,
+		sys_video.`name` AS video_name ,
+		
+		sys_program_type.`name` AS program_type, 
+		sys_company.`company_name` AS video_platform 
+		FROM 
+		sys_ad_slot a 
+		LEFT JOIN sys_slot_label ON FIND_IN_SET(sys_slot_label.`id`,a.`slot_label_ids`) 
+		LEFT JOIN sys_video ON a.`video_id` = sys_video.`id`  
+		
+		LEFT JOIN sys_program ON sys_program.`id` = sys_video.`program_id` 
+		LEFT JOIN sys_program_level ON sys_program_level.`id` = sys_program.`level_id` 
+		LEFT JOIN sys_program_type ON sys_program_type.`id` = sys_program.`type_id` 
+		LEFT JOIN sys_company ON sys_program.`company_id` = sys_company.`id` AND sys_company.`company_type`=1 
+		LEFT JOIN sys_scene ON FIND_IN_SET(sys_scene.`id`,a.`scene_ids`) 
+		LEFT JOIN sys_person ON FIND_IN_SET(sys_person.`id`,a.`person_ids`) 
+		<where>
+		    a.id in
+		    <foreach collection="list" item="id" open="(" close=")" separator=",">
+		     #{id} 
+		    </foreach>
+		</where>
+    </select>
+    <!-- 查询选中的广告位投放的列表  liuxiaolong end-->
+    <!-- 广告投放时 将广告位的与广告关联   liuxiaolong begin-->
+    <update id="updateAdSlotAdid" parameterType="java.util.List">
+        update sys_ad_slot set sys_ad_slot.ad_id = #{adId}
+	    <where>
+		    sys_ad_slot.id in
+		    <foreach collection="list" item="id" open="(" close=")" separator=",">
+		     #{id} 
+		    </foreach>
+		</where>
+    </update>
+    <!-- 广告投放时 将广告位的与广告关联   liuxiaolong end-->
+    <!-- 广告下的广告位      liuxiaolong begin-->
+	<select id="selectAdSlotByAdId" resultMap="adSlotDeliveMap" parameterType="java.lang.Long" >
+	    SELECT 
+		sys_ad_slot.id as ad_slot_id ,
+		sys_ad.id AS ad_id ,
+		sys_ad.`start_time` ,
+		a.`company_name` AS order_company ,
+		sys_ad.name AS ad_name,
+		sys_ad_style.`name` AS style_name,
+		sys_ad_type.`name` AS type_name ,
+		sys_ad_slot.`video_position` ,
+		sys_video.`name` AS video_name ,
+		b.`company_name` AS video_platform 
+		FROM sys_ad_slot 
+		LEFT JOIN sys_video ON sys_video.`id` = sys_ad_slot.`video_id` 
+		LEFT JOIN sys_company b ON b.`id` = sys_video.`company_id` AND b.`company_type`=1
+		LEFT JOIN sys_ad ON sys_ad_slot.`ad_id` = sys_ad.`id`   
+		LEFT JOIN sys_company a ON sys_ad.`company_id`=a.id  AND a.`company_type`=2
+		LEFT JOIN sys_ad_style  ON sys_ad.`style_id`=sys_ad_style.`id`
+		LEFT JOIN sys_ad_type  ON sys_ad.`type_id`=sys_ad_type.id
+	    where sys_ad.`id` = #{adId}
+    </select>
+	<!-- 广告下的广告位      liuxiaolong end-->
+    
+    <!-- 待下架广告位列表      liuxiaolong begin   -->
+	<select id="selectOffShelfAdPage" resultMap="adSlotDeliveMap" parameterType="java.lang.String" >
+	    SELECT 
+		sys_ad_slot.id as ad_slot_id ,
+		sys_ad.id AS ad_id ,
+		sys_ad.`start_time` ,
+		a.`company_name` AS order_company ,
+		sys_ad.name AS ad_name,
+		sys_ad_style.`name` AS style_name,
+		sys_ad_type.`name` AS type_name ,
+		sys_ad_slot.`video_position` ,
+		sys_video.`name` AS video_name ,
+		b.`company_name` AS video_platform 
+		FROM sys_ad_slot 
+		LEFT JOIN sys_video ON sys_video.`id` = sys_ad_slot.`video_id` 
+		LEFT JOIN sys_company b ON b.`id` = sys_video.`company_id` AND b.`company_type`=1
+		LEFT JOIN sys_ad ON sys_ad_slot.`ad_id` = sys_ad.`id`   
+		LEFT JOIN sys_company a ON sys_ad.`company_id`=a.id  AND a.`company_type`=2
+		LEFT JOIN sys_ad_style  ON sys_ad.`style_id`=sys_ad_style.`id`
+		LEFT JOIN sys_ad_type  ON sys_ad.`type_id`=sys_ad_type.id
+		<where>
+		    <if test="adId != null and adId != ''  ">
+		        sys_ad.`id` = #{adId}
+		    </if>
+		    <if test="videoName != null and videoName != ''   ">
+		       AND sys_video.`name` like CONCAT('%',#{videoName},'%')
+		    </if>
+		    <if test="videoCompanyId != null and videoCompanyId != ''   ">
+		        AND b.`id` = #{videoCompanyId}
+		    </if>
+		    
+		</where>
+	</select>
+    <!-- 待下架广告位列表      liuxiaolong end   -->
+    <!-- 通过广告位ID列 查询要导出的 下架广告位信息        liuxiaolong begin  -->
+	<select id="selectOffShelfAdList" resultMap="adSlotDeliveMap" parameterType="java.util.List" >
+	    SELECT 
+		sys_ad.`start_time` ,
+		a.`company_name` AS order_company ,
+		sys_ad.name AS ad_name,
+		sys_ad_style.`name` AS style_name,
+		sys_ad_type.`name` AS type_name ,
+		sys_ad_slot.`video_position` ,
+		sys_video.`name` AS video_name ,
+		b.`company_name` AS video_platform 
+		FROM sys_ad_slot 
+		LEFT JOIN sys_video ON sys_video.`id` = sys_ad_slot.`video_id` 
+		LEFT JOIN sys_company b ON b.`id` = sys_video.`company_id` 
+		LEFT JOIN sys_ad ON sys_ad_slot.`ad_id` = sys_ad.`id`   
+		LEFT JOIN sys_company a ON sys_ad.`company_id`=a.id 
+		LEFT JOIN sys_ad_style  ON sys_ad.`style_id`=sys_ad_style.`id`
+		LEFT JOIN sys_ad_type  ON sys_ad.`type_id`=sys_ad_type.id
+		<where>
+		    sys_ad_slot.id in
+		    <foreach collection="list" item="id" open="(" close=")" separator=",">
+		     #{id} 
+		    </foreach>
+		</where>
+	</select>
+    <!-- 通过广告位ID列 查询要导出的 下架广告位信息        liuxiaolong end  -->
+    <!-- 下架选中广告       liuxiaolong begin -->
+    <update id="updateAdSlotByChoosAd" parameterType="java.util.List">
+        update 
+		sys_ad_slot 
+		set sys_ad_slot.`ad_id` = 0 
+		<where>
+		    sys_ad_slot.id in
+		    <foreach collection="list" item="id" open="(" close=")" separator=",">
+		     #{id} 
+		    </foreach>
+		</where>
+    </update>
+    <!-- 下架选中广告       liuxiaolong end -->
+
+<!--     根据订单id批量下架广告位 -->
+	<update id="updateAdByOrderId" parameterType="java.util.List">
+		UPDATE sys_ad_slot SET sys_ad_slot.`ad_id`=0,sys_ad_slot.`order_id`=0
+		WHERE sys_ad_slot.`order_id` in
+		<foreach collection="orderIdList" item="item" index="index"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	
+	<!-- 广告投放搜索列表查询   liuxiaolong begin  -->
+    <resultMap type="com.entgroup.adms.dto.AdSlotSearchDTO" id="adSlotSearchMap">
+         <id property="id"  column="id"/>
+         <result property="searchType" column="TYPE"/>
+         <result property="name" column="NAME"/>
+     </resultMap>
+     
+    <select id="selectAdSlotSearch" resultMap="adSlotSearchMap">
+		SELECT '1' AS TYPE,id,sys_company.`company_name` AS NAME FROM sys_company WHERE sys_company.`company_type`=1
+		UNION ALL 
+		SELECT '2' AS TYPE,id,NAME FROM sys_program_type 
+		UNION ALL 
+		SELECT '3' AS TYPE,id,NAME FROM sys_slot_label 
+		UNION ALL
+		SELECT '5' AS TYPE,id,NAME FROM sys_person 
+    </select>
+	<!-- 广告投放搜索列表查询   liuxiaolong end  -->
+
+	<!-- 投放广告位列表   liuxiaolong begin-->
+
+	<!-- edited by mxy on 2017-06-28 15:01 begin -->
+	<!-- 订单投放广告位列表 -->
+	<select id="orderSelectedAdSlot"  resultMap="orderSelectedAdSlotMap" >
+		SELECT
+		ads.`id`,
+		ads.`image_server`,
+		ads.`video_position`,
+		ads.`video_id`,
+		video.`name` AS video_name,
+		pro.`id` AS pro_id,
+		pro.`name` AS pro_name,
+		pl.`id` AS pl_id,
+		pt.`id` AS pt_id,
+		pt.`name` AS pt_name,
+		com.`id` AS com_id,
+		com.`short_name` AS com_name,
+		CONCAT(
+		IFNULL(GROUP_CONCAT(scene.`name`), ''),
+		',',
+		IFNULL(GROUP_CONCAT(person.`name`), ''),
+		',',
+		IFNULL(GROUP_CONCAT(obj.`name`), ''),
+		',',
+		IFNULL(GROUP_CONCAT(label.`name`), '')
+		) AS labels
+		FROM
+		sys_ad_slot ads
+		LEFT JOIN sys_video AS video
+		ON ads.`video_id` = video.`id`
+		LEFT JOIN sys_program pro
+		ON pro.`id` = video.`program_id`
+		LEFT JOIN sys_program_level AS pl
+		ON pl.`id` = pro.`level_id`
+		LEFT JOIN sys_program_type AS pt
+		ON pt.`id` = pro.`type_id`
+		LEFT JOIN sys_company AS com
+		ON pro.`company_id` = com.`id`
+		LEFT JOIN sys_scene AS scene
+		ON FIND_IN_SET(scene.`id`, ads.`scene_ids`)
+		LEFT JOIN sys_person AS person
+		ON FIND_IN_SET(person.`id`, ads.`person_ids`)
+		LEFT JOIN `sys_object` AS obj
+		ON FIND_IN_SET(obj.`id`, ads.`object_ids`)
+		LEFT JOIN sys_slot_label AS label
+		ON FIND_IN_SET(
+		label.`id`,
+		ads.`slot_label_ids`
+		)
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="programIds != null">
+				AND pro.`id` IN (${programIds})
+			</if>
+			<if test="id != null">
+				ads.`id` = #{id}
+			</if>
+			<if test="adId != null">
+				AND ads.`ad_id` = #{adId}
+			</if>
+			<if test="orderId != null">
+				AND ads.`order_id` = #{orderId}
+			</if>
+			<if test="programLevelId != null">
+				AND  pl.`id` = #{programLevelId}
+			</if>
+			<if test="programTypeId != null">
+				AND  pt.`id` = #{programTypeId}
+			</if>
+			<if test="programId != null">
+				AND pro.`id` = #{programId}
+			</if>
+			<if test="programName != null">
+				AND pro.`name` LIKE '%${programName}%'
+			</if>
+			<if test="videoName != null">
+				AND video.`name` LIKE '%${videoName}%'
+			</if>
+			<if test="companyId != null">
+				AND com.`id` = #{companyId}
+			</if>
+			<if test="personId != null">
+				AND FIND_IN_SET(#{personId}, ads.`person_ids`)
+			</if>
+			<if test="sceneId != null">
+				AND FIND_IN_SET(#{sceneId}, ads.`scene_ids`)
+			</if>
+			<if test="objectId != null">
+				AND FIND_IN_SET(#{objectId}, ads.`object_ids`)
+			</if>
+			<if test="slotLabelId != null">
+				AND FIND_IN_SET(#{slotLabelId}, ads.`slot_label_ids`)
+			</if>
+		</trim>
+		GROUP BY ads.`id`
+	</select>
+
+	<resultMap type="com.entgroup.adms.dto.AdSlotDTO" id="orderSelectedAdSlotMap">
+		<id property="adSlotId" column="id"/>
+		<result property="imageServer" column="image_server"/>
+		<result property="videoPosition" column="video_position"/>
+		<result property="videoId" column="video_id"/>
+		<result property="videoName" column="video_name"/>
+		<result property="programId" column="pro_id"/>
+		<result property="programName" column="pro_name"/>
+		<result property="programLevelId" column="pl_id"/>
+		<result property="programTypeId" column="pt_id"/>
+		<result property="programTypeName" column="pt_name"/>
+		<result property="companyId" column="com_id"/>
+		<result property="companyName" column="com_name"/>
+		<result property="labels" column="labels"/>
+	</resultMap>
+	<!-- edited by mxy on 2017-06-28 16:15 end -->
+	<!-- edited by mxy on 2017-06-29 00:15 begin -->
+	<!-- 广告位播放信息列表 -->
+	<select id="selectAdSlotShowInfoList"  resultMap="selectAdSlotShowInfoListMap" >
+		SELECT
+		ads.`id`,
+		ads.`image_server`,
+		ads.`video_position`,
+		ads.`video_id`,
+		video.`name` AS video_name,
+		pro.`id` AS pro_id,
+		pro.`actors`,
+		pro.`show_time`,
+		pl.`id` AS pl_id,
+		pt.`id` AS pt_id,
+		pt.`name` AS pt_name,
+		com.`id` AS com_id,
+		com.`short_name` AS com_name,
+		vprn.`play_record_count` AS showNum,
+		CEIL (
+		vprn.`play_record_count` * (
+		<if test="adPrice != null">
+			#{adPrice}
+		</if>
+		<if test="adPrice == null">
+			1
+		</if>
+		) * pl.`price` * pp.`price_factor`
+		) AS expense
+		FROM
+		sys_ad_slot ads
+		LEFT JOIN sys_video AS video
+		ON ads.`video_id` = video.`id`
+		LEFT JOIN (SELECT * FROM `sys_video_play_record_note`
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="entryTimeStart != null and entryTimeEnd != null">
+				`entry_time` BETWEEN #{entryTimeStart} AND #{entryTimeEnd}
+			</if>
+		</trim>) AS vprn
+		ON vprn.`video_id` = video.`id`
+		LEFT JOIN sys_program pro
+		ON pro.`id` = video.`program_id`
+		LEFT JOIN sys_platform_price pp
+		ON pp.`company_id` = pro.`company_id`
+		AND pp.`level_id` = pro.`level_id`
+		LEFT JOIN sys_program_level AS pl
+		ON pl.`id` = pro.`level_id`
+		LEFT JOIN sys_program_type AS pt
+		ON pt.`id` = pro.`type_id`
+		LEFT JOIN sys_company AS com
+		ON pro.`company_id` = com.`id`
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="orderId != null">
+				AND ads.`order_id` = #{orderId}
+			</if>
+			<if test="videoName != null">
+				AND video.`name` LIKE '%${videoName}%'
+			</if>
+			<if test="used">
+				AND ads.`ad_id` != 0
+			</if>
+			<if test="!used">
+				AND ads.`ad_id` = 0
+			</if>
+		</trim>
+	</select>
+	<resultMap type="com.entgroup.adms.dto.AdSlotDTO" id="selectAdSlotShowInfoListMap">
+		<id property="adSlotId" column="id"/>
+		<result property="imageServer" column="image_server"/>
+		<result property="videoPosition" column="video_position"/>
+		<result property="videoId" column="video_id"/>
+		<result property="videoName" column="video_name"/>
+		<result property="programId" column="pro_id"/>
+		<result property="actors" column="actors"/>
+		<result property="showTime" column="show_time"/>
+		<result property="programLevelId" column="pl_id"/>
+		<result property="programTypeId" column="pt_id"/>
+		<result property="programTypeName" column="pt_name"/>
+		<result property="companyId" column="com_id"/>
+		<result property="companyName" column="com_name"/>
+		<result property="showNum" column="show_num"/>
+		<result property="expense" column="expense"/>
+	</resultMap>
+
+	<!-- 已完成订单广告位播放信息列表 -->
+	<select id="selectAdSlotShowInfoList4Finished"  resultMap="selectAdSlotShowInfoList4FinishedMap" >
+		SELECT
+		ads.`id`,
+		ads.`image_server`,
+		ads.`video_position`,
+		ads.`video_id`,
+		video.`name` AS video_name,
+		pro.`id` AS pro_id,
+		pro.`actors`,
+		pro.`show_time`,
+		pl.`id` AS pl_id,
+		pt.`id` AS pt_id,
+		pt.`name` AS pt_name,
+		com.`id` AS com_id,
+		com.`short_name` AS com_name,
+		vprn.`play_record_count` AS showNum,
+		CEIL (
+		vprn.`play_record_count` * (
+		<if test="adPrice != null">
+			#{adPrice}
+		</if>
+		<if test="adPrice == null">
+			1
+		</if>
+		) * pl.`price` * pp.`price_factor`
+		) AS expense
+		FROM
+		sys_order_finished_info AS ofi
+		LEFT JOIN sys_ad_slot ads
+		ON FIND_IN_SET(ads.`id`, ofi.`ad_slot_ids`)
+		LEFT JOIN sys_video AS video
+		ON ads.`video_id` = video.`id`
+		LEFT JOIN (SELECT * FROM `sys_video_play_record_note`
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="entryTimeStart != null and entryTimeEnd != null">
+				`entry_time` BETWEEN #{entryTimeStart} AND #{entryTimeEnd}
+			</if>
+		</trim>) AS vprn
+		ON vprn.`video_id` = video.`id`
+		LEFT JOIN sys_program pro
+		ON pro.`id` = video.`program_id`
+		LEFT JOIN sys_platform_price pp
+		ON pp.`company_id` = pro.`company_id`
+		AND pp.`level_id` = pro.`level_id`
+		LEFT JOIN sys_program_level AS pl
+		ON pl.`id` = pro.`level_id`
+		LEFT JOIN sys_program_type AS pt
+		ON pt.`id` = pro.`type_id`
+		LEFT JOIN sys_company AS com
+		ON pro.`company_id` = com.`id`
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="orderId != null">
+				AND ofi.`order_id` = #{orderId}
+			</if>
+			<if test="videoName != null">
+				AND video.`name` LIKE '%${videoName}%'
+			</if>
+			<if test="used">
+				AND ads.`ad_id` != 0
+			</if>
+			<if test="used != null and !used">
+				AND ads.`ad_id` = 0
+			</if>
+		</trim>
+	</select>
+	<resultMap type="com.entgroup.adms.dto.AdSlotDTO" id="selectAdSlotShowInfoList4FinishedMap">
+		<id property="adSlotId" column="id"/>
+		<result property="imageServer" column="image_server"/>
+		<result property="videoPosition" column="video_position"/>
+		<result property="videoId" column="video_id"/>
+		<result property="videoName" column="video_name"/>
+		<result property="programId" column="pro_id"/>
+		<result property="actors" column="actors"/>
+		<result property="showTime" column="show_time"/>
+		<result property="programLevelId" column="pl_id"/>
+		<result property="programTypeId" column="pt_id"/>
+		<result property="programTypeName" column="pt_name"/>
+		<result property="companyId" column="com_id"/>
+		<result property="companyName" column="com_name"/>
+		<result property="showNum" column="show_num"/>
+		<result property="expense" column="expense"/>
+	</resultMap>
+	<!-- edited by mxy on 2017-06-29 16:46 end -->
+</mapper>

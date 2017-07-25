@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.CompanyMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Company">
+		<id column="id" property="id" />
+		<result column="company_name" property="companyName" />
+		<result column="address" property="address" />
+		<result column="postcode" property="postcode" />
+		<result column="phone_number" property="phoneNumber" />
+		<result column="status" property="status" />
+		<result column="secret_key" property="secretKey" />
+		<result column="deleted" property="deleted" />
+		<result column="created" property="created" />
+		<result column="short_name" property="shortName" />
+		<result column="company_type" property="companyType" />
+		<result column="contact" property="contact" />
+		<result column="email" property="email" />
+		<result column="rank" property="rank" />
+		<result column="company_vocation_id" property="companyVocationId" />
+		<result column="user_id" property="userId" />
+		<result column="open_account_permit_path" property="openAccountPermitPath" />
+		<result column="organization_code_path" property="organizationCodePath" />
+		<result column="internet_address" property="internetAddress" />
+	</resultMap>
+	
+
+
+	<!-- 通用查询结果列 -->
+	<sql id="Base_Column_List">
+        id, company_name AS companyName, address, postcode, phone_number AS phoneNumber, status, secret_key AS
+        secretKey, deleted, created, short_name AS shortName, company_type AS companyType, contact, email, rank,
+        company_vocation_id AS companyVocationId, user_id AS userId, open_account_permit_path AS openAccountPermitPath,
+        organization_code_path AS organizationCodePath, internet_address AS internetAddress
+    </sql>
+
+	<!-- 查询企业列表 begin -->
+	<resultMap id="AllCompanyMap" type="com.entgroup.adms.model.system.Company" extends="BaseResultMap">
+		<result column="company_vocation_name" property="companyVocationName"/>
+		<result column="order_ids" property="orderIds"/>
+		<result column="order_statuses" property="orderStatuses"/>
+		<result column="user_ids" property="userIds"/>
+		<association property="admin" javaType="com.entgroup.adms.model.system.User">
+			<id column="user_id" property="id"/>
+			<result column="login_name" property="loginName"/>
+		</association>
+	</resultMap>
+
+	<select id="getAllCompanies" resultMap="AllCompanyMap" parameterType="com.entgroup.adms.model.system.Company">
+		SELECT
+		com.id,
+		com.company_name,
+		com.address,
+		com.postcode,
+		com.phone_number,
+		com.status,
+		com.secret_key,
+		com.deleted,
+		com.created,
+		com.short_name,
+		com.company_type,
+		com.contact,
+		com.email,
+		com.rank,
+		com.company_vocation_id,
+		com.internet_address,
+		cv.name AS company_vocation_name,
+		GROUP_CONCAT(DISTINCT CONCAT(o.id,'-',o.status))AS order_ids,
+		GROUP_CONCAT(DISTINCT susercount.id)AS user_ids,
+		suser.id AS user_id,
+		suser.login_name
+		FROM
+		sys_company com
+		LEFT JOIN sys_company_vocation cv
+		ON com.company_vocation_id = cv.id
+		LEFT JOIN sys_ad_order o
+		ON com.id = o.company_id
+		LEFT JOIN sys_user suser
+		ON com.id = suser.company_id AND suser.admin = 1
+		LEFT JOIN sys_user susercount
+		ON com.id = susercount.company_id
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			<if test="companyName != null">
+				AND (com.company_name like CONCAT('%',#{companyName},'%')
+				OR com.short_name like CONCAT('%',#{companyName},'%'))
+			</if>
+			AND com.company_type IN (2, 3)
+			<if test="userId != null">
+				AND com.user_id = #{userId}
+			</if>
+		</trim>
+		GROUP BY com.id
+	</select>
+	<!-- 查询公司列表 end -->
+
+	<!-- 根据包名和安全码查询公司 by sunzhen-->
+	<select id="selectByAppkeyAndPackageName" resultMap="BaseResultMap">
+		SELECT * FROM  sys_company company
+		LEFT JOIN  sys_company_app app ON  app.company_id = company.id
+		WHERE company.secret_key = #{appKey} AND app.app_package = #{appPackageName}
+	</select>
+
+</mapper>

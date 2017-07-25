@@ -1,0 +1,1734 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AdDisplayCountMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.AdDisplayCount">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="ad_id" property="adId"/>
+        <result column="program_id" property="programId"/>
+        <result column="show_count" property="showCount"/>
+        <result column="user_count" property="userCount"/>
+        <result column="day_time" property="dayTime"/>
+        <result column="created" property="created"/>
+        <result property="totalprice" column="order_totalprice"/>
+        <result column="click_count" property="clickCount"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, order_id AS orderId, ad_id AS adId, program_id AS
+        programId,
+        show_count AS showCount,
+        user_count AS userCount, day_time AS
+        dayTime, created, click_count AS clickCount
+    </sql>
+
+    <resultMap type="com.entgroup.adms.dto.DisplayCountDTO" id="DisResultMap">
+        <result column="order_id" property="orderId"/>
+        <result column="order_id" property="adOrderId"/>
+        <result column="order_name" property="orderName"/>
+        <result column="ad_id" property="adId"/>
+        <result column="program_id" property="programId"/>
+        <result column="show_count" property="showCount"/>
+        <result column="user_count" property="userCount"/>
+        <result column="click_count" property="clickCount"/>
+        <!--<result column="style_price" property="adStylePrice"/>-->
+        <!--<result column="program_price" property="programPrice"/>-->
+        <result column="day_time" property="dayTime"/>
+        <result column="order_totalprice" property="orderTotalPrice"/>
+        <result property="adName" column="ad_name"/>
+        <result property="adStyleName" column="style_name"/>
+        <result property="programName" column="programname"/>
+        <result property="adStyleId" column="style_id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="companyName" column="company_name"/>
+        <result property="totalShowCount" column="totalshowcount"/>
+        <result property="totalUserCount" column="totalusercount"/>
+        <result property="sumShowCount" column="sumshowcount"/>
+        <result property="sumClickCount" column="sumclickcount"/>
+        <result property="sumUserCount" column="sumusercount"/>
+        <result property="sumCosumeMoney" column="sumcosumemoney"/>
+        <result property="sumTotalMoney" column="sumtotalmoney"/>
+        <result property="slotId" column="slot_id"/>
+        <result property="slotCount" column="slot_count"/>
+        <result property="countId" column="count_id"/>
+        <result column="mshow_count" property="mShowCount"/>
+        <result column="muser_count" property="mUserCount"/>
+        <result column="begin_time" property="beginTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="total_money" property="totalMoney"/>
+        <result column="cosume_money" property="cosumeMoney"/>
+        <result column="ctr" property="ctr"/>
+    </resultMap>
+
+    <!-- 获取首页信息 开始-->
+    <!-- edited by qmh on 2017-06-08 17:22 begin -->
+    <!--获取首页昨日订单信息列表 分页-->
+    <select id="selectHomeDisplayCountPage" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT DISTINCT
+            sadc.`order_id`,
+            sao.`order_name`,
+            sao.`total_money`,
+            sao.`cosume_money`                                                     sumCosumeMoney,
+            sao.`begin_time`,
+            sao.`end_time`,
+            sadc.`click_count`,
+            sadc.`day_time`,
+            sum(sadc.`show_count`)                              sumShowCount,
+            sum(sadc.`user_count`)                                                 sumUserCount,
+            sum(sadc.`click_count`)                                                sumClickCount,
+            ROUND(sum(sadc.`click_count`) * 1.0 / sum(sadc.`show_count`) * 100, 2) Ctr
+        FROM sys_ad_order sao
+            LEFT JOIN sys_ad_display_count sadc
+                ON sao.`id` = sadc.`order_id`
+        WHERE sao.`begin_time` > 0
+              AND sao.`end_time` > 0
+              AND sadc.`order_id` > 0
+              AND sadc.`day_time` = #{beforeDay}
+              AND sao.`company_id` = #{companyId}
+        GROUP BY sao.`id`
+        ORDER BY ctr
+            DESC
+    </select>
+    <!-- edited by qmh on 2017-06-08 17:25 end -->
+
+    <!-- edited by qmh on 2017-07-02 09:52 start -->
+    <!--公司下所有订单信息-->
+    <select id="selectHomeDisplayCountList" parameterType="com.entgroup.adms.model.system.AdOrder"
+            resultMap="DisplayCountResultMap">
+        SELECT
+        adOrder.id order_id,
+        adOrder.`order_name`,
+        adOrder.`begin_time`,
+        adOrder.`end_time`,
+        SUM(displayCount.show_count) AS show_counts,
+        SUM(displayCount.click_count) AS click_counts,
+        adOrder.`total_money`,
+        adOrder.`cosume_money`,
+        ROUND(SUM(displayCount.`click_count`)/SUM(displayCount.`show_count`)*100,2) ctr
+        FROM sys_ad_order adOrder
+        LEFT JOIN sys_company company ON company.id = adOrder.company_id
+        LEFT JOIN sys_ad_display_count displayCount ON displayCount.`order_id` = adOrder.`id`
+        <trim prefix="where" prefixOverrides="AND|OR">
+            <if test="null != companyId">
+                AND company.id = #{companyId}
+            </if>
+        </trim>
+        GROUP BY adOrder.`id`
+        order by ctr desc
+    </select>
+    <!--公司下所有订单信息-->
+    <!-- edited by qmh on 2017-07-02 09:52 end -->
+
+    <!-- edited by qmh on 2017-06-11 16:04 begin -->
+    <!-- 获取首页中其它信息(不包括折线图数据)-->
+    <select id="selectHomeOtherList" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT DISTINCT
+            tem.`id`                                                               orderId,
+            SUM(sadc.`show_count`)                                                 sumshowcount,
+            SUM(sadc.`click_count`)                                                sumclickcount,
+            tem.sumtotalmoney                                                      sumtotalmoney,
+            tem.sumcosumemoney                                                     sumcosumemoney,
+            ROUND(sum(sadc.`click_count`) * 1.0 / sum(sadc.`show_count`) * 100, 2) Ctr
+        FROM (
+                 SELECT DISTINCT
+                     sao.`id`,
+                     sao.`company_id`,
+                     sao.`total_money`  sumtotalmoney,
+                     sao.`cosume_money` sumcosumemoney
+                 FROM sys_ad_order sao
+             ) tem
+            JOIN sys_ad_display_count sadc
+                ON tem.`id` = sadc.`order_id`
+        WHERE sadc.`order_id` > 0
+              AND sadc.`day_time` = #{beforeDay}
+              AND tem.`company_id` = #{companyId}
+        GROUP BY sadc.`order_id`
+    </select>
+    <!-- edited by qmh on 2017-06-11 16:04 end  -->
+
+    <!-- edited by qmh on 2017-06-12 09:38 begin -->
+    <!-- 获取首页中折线图数据，根据订单id-->
+    <select id="selectGraphCount" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT sadc.`day_time` ,sadc.`order_id`,sao.`order_name`,
+        SUM(sadc.`show_count`) sumShowCount,
+        SUM(sadc.`user_count`) sumUserCount,
+        SUM(sadc.`click_count`) sumClickCount,
+        ROUND(SUM(sadc.`click_count`)/SUM(sadc.`show_count`)*100,2) ctr
+        FROM sys_ad_display_count sadc
+        JOIN sys_ad_order sao
+        ON sadc.`order_id` = sao.`id`
+        WHERE sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        AND sadc.`day_time` &lt; DATE(NOW())
+        AND sao.`company_id` = #{companyId}
+
+        <if test="orderId!=null">
+            AND sao.`id` = #{orderId}
+        </if>
+        GROUP BY sadc.`day_time`
+    </select>
+    <!-- edited by qmh on 2017-06-12 09:38 end -->
+
+    <!-- edited by qmh on 2017-06-12 15:04 begin -->
+    <!-- 获取订单名称 与所有数据统计共用此接口-->
+    <select id="selectOrderNameList" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT
+        sao.`order_name`,
+        sao.`id`
+        FROM
+        (
+        SELECT sc.`id`
+        FROM sys_company sc
+        WHERE 1=1
+        <if test="userId!=0">
+            AND sc.`user_id` = #{userId}
+        </if>
+        ) a
+        JOIN sys_ad_order sao
+        ON a.`id` = sao.`company_id`
+        WHERE 1=1
+        <if test="companyId!=0">
+            AND sao.`company_id` = #{companyId}
+        </if>
+
+    </select>
+    <!-- edited by qmh on 2017-06-12 15:04 end -->
+    <!-- 获取首页信息 结束-->
+
+
+    <!-- 基于广告视图的相关信息 开始  -->
+    <!-- edited by qmh on 2017-06-14 10:23 begin -->
+    <!--基于广告列表 分页-->
+    <select id="selectAdDisplayCountPage" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT DISTINCT
+            sadc.`order_id`,
+            sao.`order_name`,
+            sao.`total_money` - sao.`cosume_money`                           sumTotalMoney,
+            sao.`cosume_money`                                               sumCosumeMoney,
+            sao.`begin_time`,
+            sao.`end_time`,
+            sadc.`day_time`,
+            ROUND(sum(sadc.`show_count`) / 10000, 2)                         sumshowcount,
+            sum(sadc.`click_count`)                                          sumclickcount,
+            ROUND(sum(sadc.`click_count`) / sum(sadc.`show_count`) * 100, 2) ctr
+        FROM sys_ad_order sao
+            LEFT JOIN sys_ad_display_count sadc
+                ON sao.`id` = sadc.`order_id`
+        WHERE sao.`begin_time` > 0
+              AND sao.`end_time` > 0
+              AND sadc.`order_id` > 0
+              AND sao.`company_id` = #{companyId}
+        GROUP BY sao.`id`
+        ORDER BY ctr
+            DESC
+    </select>
+    <!-- edited by qmh on 2017-06-14 10:23end -->
+
+    <!-- edited by qmh on 2017-06-14 12:23 begin -->
+    <!-- 获取基于广告中其它信息(不包括折线图数据)  与管理员数据统计共用此接口-->
+    <select id="selectAdOtherList" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT DISTINCT
+        sao.`id`,sadc.`order_id`,
+        sao.`order_name`,
+        SUM(sadc.`show_count`) sumshowcount,
+        SUM(sadc.`click_count`) sumclickcount
+        FROM sys_ad_display_count sadc
+        join sys_ad_order sao
+        on sadc.`order_id` = sao.`id`
+        left join sys_company sc
+        on sc.`id` = sao.`company_id`
+        WHERE sadc.`order_id` > 0
+        <if test="companyId!=0">
+            AND sao.`company_id` = #{companyId}
+        </if>
+        <if test="orderId!=null">
+            AND sao.`id` = #{orderId}
+        </if>
+        <if test="dayPeriod==7">
+            and sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="dayPeriod==15">
+            and sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 15 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="dayPeriod==30">
+            and sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="userId!=0">
+            AND sc.`user_id` = #{userId}
+        </if>
+    </select>
+    <!-- edited by qmh on 2017-06-14 12:23 end  -->
+
+    <!-- edited by qmh on 2017-06-14 13:23 begin -->
+    <!-- 获取基于广告折线图数据，与管理员数据统计共用此接口-->
+    <select id="selectAdGraphCount" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT sadc.`day_time` ,sadc.`order_id`,sao.`order_name`,
+        SUM(sadc.`show_count`) sumShowCount,
+        SUM(sadc.`user_count`) sumUserCount,
+        SUM(sadc.`click_count`) sumClickCount,
+        ROUND(SUM(sadc.`click_count`)/SUM(sadc.`show_count`)*100,2) ctr
+        FROM sys_ad_display_count sadc
+        JOIN sys_ad_order sao
+        ON sadc.`order_id` = sao.`id`
+        left join sys_company sc
+        on sc.`id` = sao.`company_id`
+        WHERE 1=1
+        <if test="companyId!=0">
+            AND sao.`company_id` = #{companyId}
+        </if>
+        <if test="orderId!=null">
+            AND sao.`id` = #{orderId}
+        </if>
+        <if test="dayPeriod==7">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="dayPeriod==15">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 15 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="dayPeriod==30">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="userId!=0">
+            AND sc.`user_id` = #{userId}
+        </if>
+        GROUP BY sadc.`day_time`
+    </select>
+    <!-- edited by qmh on 2017-06-14 13:23 end -->
+
+    <!-- edited by qmh on 2017-06-14 14:42 begin-->
+    <!-- 管理员权限下，获取公司名称 -->
+    <select id="selectCompanyNameList" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT
+            sc.`company_name`,
+            sc.`id`
+        FROM sys_company sc
+        WHERE sc.`user_id` = #{userId}
+    </select>
+    <!-- edited by qmh on 2017-06-14 14:42 end -->
+
+    <!-- edited by qmh on 2017-06-14 15:35 begin-->
+    <!-- 管理员中资源统计的公司相关信息列表  分页-->
+    <select id="selectAdminDisplayCountListPage" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT
+            tem.companyId,
+            tem.companyName,
+            tem.totalMoney - tem.cosumeMoney                               sumtotalmoney,
+            tem.cosumeMoney                                                sumcosumemoney,
+            sum(tem.sumclickCount)                                         sumclickcount,
+            ROUND(sum(tem.sumshowcount) / 10000, 2)                        sumshowcount,
+            ROUND(sum(tem.sumclickcount) / sum(tem.sumshowcount) * 100, 2) ctr
+        FROM (
+                 SELECT DISTINCT
+                     sc.`id`                 companyId,
+                     sao.`id`                id,
+                     sao.`total_money`       totalMoney,
+                     sao.`cosume_money`      cosumeMoney,
+                     sadc.`click_count`      clickCount,
+                     SUM(sadc.`show_count`)  sumshowcount,
+                     SUM(sadc.`user_count`)  sumusercount,
+                     SUM(sadc.`click_count`) sumclickcount,
+                     sc.`company_name`       companyName
+                 FROM sys_company sc
+                     LEFT JOIN sys_ad_order sao
+                         ON sao.`company_id` = sc.`id`
+                     LEFT JOIN sys_ad_display_count sadc
+                         ON sao.`id` = sadc.`order_id`
+
+                 WHERE sc.`user_id` = #{userId}
+                 GROUP BY sc.`id`
+             ) tem
+        GROUP BY tem.companyId
+        ORDER BY ctr
+            DESC
+    </select>
+    <!-- edited by qmh on 2017-06-14 15:35 end-->
+    <!-- 基于广告视图的相关信息 结束 -->
+
+    <!-- 基于视频平台的相关信息 开始 -->
+    <!-- 获取基于视频平台列表 分页 -->
+    <select id="selectVideoForPlatCountPage" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT
+        b.`company_name` companyName,
+        b.slot_count slotCount,
+        b.`sumshowcount` sumShowCount,
+        sumclickcount sumClickCount,
+        sumcosumemoney sumCosumeMoney,
+        ctr
+        FROM (
+        SELECT
+        sadc.`order_id`,
+        sc.`id` AS company_id,
+        sc.`company_name`,
+        count(sadc.`order_id`) slot_count,
+        ROUND(SUM(sadc.`show_count`)*1.0/10000,2) sumshowcount,
+        SUM(sadc.`user_count`) AS totalusercount,
+        SUM(sadc.`click_count`) AS sumclickcount,
+        ROUND(SUM(sadc.`click_count`)/SUM(sadc.`show_count`)*100,2) ctr,
+        Round(SUM(
+        sadc.`show_count` * (sast.`price` / sast.`price_unit`) * spl.`price` *
+        spp.`price_factor`
+        ),0) sumcosumemoney
+        FROM
+        sys_ad_display_count sadc
+        LEFT JOIN sys_program sp
+        ON sadc.`program_id` = sp.`id`
+        LEFT JOIN
+        sys_company sc
+        ON sp.`company_id` = sc.`id`
+        LEFT JOIN sys_ad sa
+        ON
+        sa.`id` = sadc.`ad_id`
+        LEFT JOIN sys_ad_order sao
+        ON sadc.`order_id` = sao.`id`
+
+        LEFT JOIN sys_ad_style sast
+        ON sast.`id` = sa.`style_id`
+        LEFT JOIN sys_program_level spl
+        ON sp.`level_id` = spl.`id`
+        LEFT JOIN sys_platform_price spp
+        ON spp.`company_id` = sp.`company_id`
+        AND spp.`level_id` = sp.`level_id`
+        WHERE sc.`company_type` = 1
+        AND sc.`deleted` = 0
+        AND spp.`deleted` = 0
+        AND sadc.`ad_id` IN
+        (
+        SELECT DISTINCT
+        sys_ad.`id`
+        FROM
+        sys_ad
+        LEFT JOIN sys_company
+        ON sys_company.`id` = sys_ad.`company_id`
+        LEFT JOIN sys_order_ad
+        ON sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT JOIN sys_ad_display_count sadc
+        ON sadc.`ad_id` = sys_ad.`id`
+        WHERE
+        sys_ad.`status` = 2
+        AND sys_company.`id`=#{companyId}
+        <if test="orderId!=null">
+            AND sadc.`order_id` = #{orderId}
+        </if>
+        )
+        AND sa.`status` = 2
+        AND sc.`company_type` = 1
+        <if test="orderId!=null">
+            AND sadc.`order_id` = #{orderId}
+        </if>
+        <if test="dayPeriod==7">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="dayPeriod==15">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 15 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="dayPeriod==30">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        GROUP BY sc.`id`,
+        sadc.`order_id`
+        ) b
+        GROUP BY b.`company_name`
+        ORDER BY ctr DESC,b.company_name ASC
+    </select>
+    <!-- 基于视频平台的相关信息 结束 -->
+
+    <!-- 基于节目类型的相关信息 开始 -->
+    <!-- 获取基于节目类型列表 分页 -->
+    <select id="selectProgramTypeCountPage" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT
+        b.programName AS programName,
+        b.slot_count slotCount,
+        b.`sumshowcount` sumShowCount ,
+        b.`totalusercount` AS totalusercount,
+        b.sumclickcount AS sumClickCount,
+        b.sumcosumemoney AS sumCosumeMoney,
+        ctr
+        FROM(
+        SELECT
+        spt.`id`,
+        spt.name AS programName,
+        count(sadc.`order_id`) slot_count,
+        ROUND(SUM(sadc.`show_count`)*1.0/10000,2) sumshowcount,
+        SUM(sadc.`user_count`) AS totalusercount,
+        SUM(sadc.`click_count`) AS sumclickcount,
+        ROUND(SUM(sadc.`click_count`)/SUM(sadc.`show_count`)*100,2) ctr,
+        Round(SUM(sadc.`show_count` * (sast.`price` / sast.`price_unit`) * spl.`price` * spp.`price_factor`),0)
+        sumcosumemoney
+        FROM
+        sys_ad_display_count sadc
+        LEFT JOIN sys_program sp
+        ON sadc.`program_id` = sp.`id`
+        LEFT JOIN
+        sys_company sc
+        ON sp.`company_id` = sc.`id`
+        LEFT JOIN sys_ad sa
+        ON sa.`id` = sadc.`ad_id`
+        LEFT JOIN sys_ad_order sao
+        ON sadc.`order_id` = sao.`id`
+        LEFT JOIN sys_program_type spt
+        ON spt.`id` = sp.`type_id`
+        LEFT JOIN sys_ad_style sast
+        ON sast.`id` = sa.`style_id`
+        LEFT JOIN sys_program_level spl
+        ON sp.`level_id` = spl.`id`
+        LEFT JOIN sys_platform_price spp
+        ON spp.`company_id` = sp.`company_id`
+        AND spp.`level_id` = sp.`level_id`
+        WHERE sc.`company_type` = 1
+        AND sc.`deleted` = 0
+        AND spp.`deleted` = 0
+        and sadc.`ad_id` IN
+        (
+        SELECT sys_ad.`id`
+        FROM sys_ad
+        LEFT JOIN sys_company
+        ON sys_company.`id` = sys_ad.`company_id`
+        LEFT JOIN sys_order_ad
+        ON sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT JOIN sys_ad_display_count sadc
+        ON sadc.`ad_id` = sys_ad.`id`
+        WHERE sys_ad.`status` = 2
+        AND sys_company.`id`=#{companyId}
+        <if test="orderId!=null">
+            AND sadc.`order_id` = #{orderId}
+        </if>
+        )
+        AND sa.`status` = 2
+        AND sc.`company_type` = 1
+        <if test="orderId!=null">
+            AND sadc.`order_id` = #{orderId}
+        </if>
+        <if test="dayPeriod==7">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="dayPeriod==15">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 15 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        <if test="dayPeriod==30">
+            AND sadc.`day_time` >=DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND sadc.`day_time` &lt; DATE(NOW())
+        </if>
+        GROUP BY programName,
+        sadc.`order_id`
+        ORDER BY ctr DESC
+        )AS b
+        WHERE b.id > 0
+        GROUP BY b.programName
+        ORDER BY ctr DESC
+    </select>
+    <!-- 基于节目类型的相关信息 结束 -->
+
+    <!-- 基于视频平台/节目类型的订单名称列表 开始-->
+    <select id="selectVideoAndProgramOrderNameList" resultMap="DisResultMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT
+        sao.`order_name` orderName,
+        sao.`id` orderId
+        FROM
+        (
+        SELECT sc.`id`
+        FROM sys_company sc
+        ) a
+        JOIN sys_ad_order sao
+        ON a.`id` = sao.`company_id`
+        WHERE 1=1
+        <if test="companyId!=0">
+            AND sao.`company_id` = #{companyId}
+        </if>
+    </select>
+    <!-- 基于视频平台/节目类型的订单名称列表 结束-->
+
+
+
+    <!-- 基于视频平台广告位总数 开始 * -->
+    <select id="selectVideoForPlatAdCount" resultMap="DisplayCountResultMap"
+            parameterType="com.entgroup.adms.model.system.AdOrder">
+        SELECT
+            platform.id,
+            platform.company_name          platformName,
+            COUNT(slot.id)              AS slotOnline,
+            COUNT(finished.ad_slot_ids) AS slotOffline
+        FROM sys_program_type programType
+            LEFT JOIN sys_program program ON program.type_id = programType.id
+            LEFT JOIN sys_video video ON video.program_id = program.id
+            LEFT JOIN sys_ad_slot slot ON video.id = slot.video_id
+            LEFT JOIN sys_ad_order adOrder ON adOrder.id = slot.order_id
+            LEFT JOIN sys_order_finished_info finished ON adOrder.id = finished.order_id AND adOrder.status = 2
+            LEFT JOIN sys_company company ON company.id = adOrder.company_id
+            LEFT JOIN sys_ad ad ON slot.ad_id = ad.id
+            LEFT JOIN sys_ad_style style ON style.id = ad.style_id
+            LEFT JOIN sys_ad_display_count displayCount ON displayCount.ad_id = ad.id
+            LEFT JOIN sys_program_level programLevel ON programLevel.id = program.level_id
+            LEFT JOIN sys_company platform ON platform.id = program.company_id
+            LEFT JOIN sys_platform_price platformPrice
+                ON platformPrice.company_id = platform.id AND platformPrice.level_id = program.level_id
+        WHERE company.id = #{companyId}
+        GROUP BY platform.id
+    </select>
+    <!-- 基于视频平台广告位总数 结束 -->
+
+    <!-- 基于节目类型广告位总数 开始 * -->
+    <select id="selectProgramTypeAdCount" resultMap="DisplayCountResultMap"
+            parameterType="com.entgroup.adms.model.system.AdOrder">
+        SELECT
+            programType.id,
+            programType.name               programTypeName,
+            count(slot.id)              AS slotOnline,
+            COUNT(finished.ad_slot_ids) AS slotOffline
+        FROM sys_program_type programType
+            LEFT JOIN sys_program program ON program.type_id = programType.id
+            LEFT JOIN sys_video video ON video.program_id = program.id
+            LEFT JOIN sys_ad_slot slot ON video.id = slot.video_id
+            LEFT JOIN sys_ad_order adOrder ON adOrder.id = slot.order_id
+            LEFT JOIN sys_order_finished_info finished ON adOrder.id = finished.order_id AND adOrder.status = 2
+            LEFT JOIN sys_company company ON company.id = adOrder.company_id
+            LEFT JOIN sys_ad ad ON slot.ad_id = ad.id
+            LEFT JOIN sys_ad_style style ON style.id = ad.style_id
+            LEFT JOIN sys_ad_display_count displayCount ON displayCount.ad_id = ad.id
+            LEFT JOIN sys_program_level programLevel ON programLevel.id = program.level_id
+            LEFT JOIN sys_company platform ON platform.id = program.company_id
+            LEFT JOIN sys_platform_price platformPrice
+                ON platformPrice.company_id = platform.id AND platformPrice.level_id = program.level_id
+        WHERE company.id = #{companyId}
+        GROUP BY programType.id
+    </select>
+    <!-- 基于节目类型广告位总数 结束 -->
+
+    <!-- 获取昨天订单消费金额 开始 * -->
+    <select id="staOrderCosumeList" resultMap="DisResultMap"
+            parameterType="java.lang.String">
+        SELECT
+            sadc.`order_id`,
+            sadc.`ad_id`,
+            sadc.`program_id`,
+            sadc.`show_count`,
+            sadc.`day_time`,
+            sc.`id` AS company_id,
+            sc.`company_name`,
+            SUM(
+                    sadc.`show_count` * (sast.`price` / sast.`price_unit`) * spl.`price` *
+                    spp.`price_factor`
+            )          order_totalprice
+        FROM
+            sys_ad_display_count sadc
+            LEFT JOIN sys_ad sa
+                ON sadc.`ad_id` = sa.`id`
+            LEFT JOIN sys_ad_style sast
+                ON sast.`id` = sa.`style_id`
+            LEFT JOIN sys_program sp
+                ON sadc.`program_id` = sp.`id`
+            LEFT JOIN sys_program_level spl
+                ON sp.`level_id` = spl.`id`
+            LEFT JOIN sys_company sc
+                ON sp.`company_id` = sc.`id`
+            LEFT JOIN sys_platform_price spp
+                ON spp.`company_id` = sp.`company_id`
+                   AND spp.`level_id` = sp.`level_id`
+        WHERE sc.`company_type` = 1
+              AND sc.`deleted` = 0
+              AND spp.`deleted` = 0
+              AND sadc.`day_time` = #{beforeDay}
+        GROUP BY sadc.`order_id`
+    </select>
+    <!-- 获取昨天订单消费金额 结束 -->
+
+
+    <!-- 根据公司id查询 广告的曝光量 excel开始 -->
+    <select id="selectAdAndCount" resultMap="DisResultMap"
+            parameterType="java.lang.String">
+        SELECT
+        a.`ad_name`,
+        a.`slot_id` AS slot_id,
+        a.`ad_id` AS ad_id,
+        a.count_id AS count_id,
+        a.`company_id` AS company_id,
+        a.`order_id` AS
+        order_id,
+        a.`ad_name` AS ad_name,
+        a.`style_id` AS style_id,
+        a.`style_name` AS style_name,
+        a.`company_name` AS company_name,
+        a.`show_count` AS show_count,
+        a.`user_count` AS user_count
+        FROM
+        (SELECT
+        b.`slot_id` AS slot_id,
+        b.`ad_id` AS ad_id,
+        '' AS
+        count_id,
+        b.`company_id` AS company_id,
+        b.`order_id` AS order_id,
+        b.`ad_name` AS
+        ad_name,
+        b.`style_id` AS style_id,
+        b.`style_name` AS
+        style_name,
+        b.`company_name` AS company_name,
+        '' AS show_count,
+        '' AS
+        user_count,
+        ''
+        AS day_time
+        FROM
+        (SELECT
+        sys_ad_slot.`id` AS slot_id,
+        sys_ad_slot.`ad_id`
+        AS ad_id,
+        sys_ad.`company_id` AS company_id,
+        sys_order_ad.`order_id` AS
+        order_id,
+        sys_ad.`name` AS ad_name,
+        sys_ad_style.`id` AS style_id,
+        sys_ad_style.`name` AS style_name,
+        sys_company.`company_name` AS
+        company_name,
+        COUNT(sys_ad_display_count.`ad_id`) AS dis_count
+        FROM
+        sys_ad
+        RIGHT JOIN
+        sys_ad_slot
+        ON sys_ad_slot.`ad_id` =
+        sys_ad.`id`
+        LEFT
+        JOIN sys_order_ad
+        ON
+        sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT JOIN
+        sys_ad_style
+        ON
+        sys_ad_style.`id` = sys_ad.`style_id`
+        LEFT
+        JOIN
+        sys_company
+        ON
+        sys_ad.`company_id` = sys_company.`id`
+        LEFT JOIN
+        sys_ad_display_count
+        ON
+        sys_ad_display_count.`ad_id` = sys_ad.`id`
+        AND
+        sys_ad_display_count.`order_id` = sys_order_ad.`order_id`
+        <where>
+            sys_ad.`status` = 2
+            <if test="companyId!=null">
+                and sys_ad.`company_id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sys_order_ad.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                and sys_ad.`id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                and sys_ad.`style_id`=#{adStyleId}
+            </if>
+        </where>
+        GROUP BY sys_ad_slot.`ad_id`,
+        sys_order_ad.`order_id`) b
+        WHERE
+        b.`dis_count` = 0
+        UNION
+        ALL
+        SELECT
+        '' AS slot_id,
+        '' AS ad_id,
+        sadc.`id` AS
+        count_id,
+        sc.`id` AS
+        company_id,
+        sadc.`order_id`
+        AS order_id,
+        sa.`name` AS
+        ad_name,
+        sas.`id`
+        AS style_id,
+        sas.`name` AS
+        style_name,
+        sc.`company_name`,
+        SUM(sadc.`show_count`) AS show_count,
+        SUM(sadc.`user_count`) AS user_count,
+        sadc.`day_time`
+        FROM
+        sys_ad_display_count sadc
+        LEFT JOIN sys_ad sa
+        ON
+        sadc.`ad_id` = sa.`id`
+        LEFT JOIN sys_ad_style sas
+        ON sa.`style_id` =
+        sas.`id`
+        LEFT JOIN
+        sys_company sc
+        ON sa.`company_id` = sc.`id`
+        <where>
+            sa.`status` = 2
+            <if test="companyId!=null">
+                and sa.`company_id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sadc.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                and sadc.`ad_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                and sas.`id`=#{adStyleId}
+            </if>
+            <if test="beforeDay!=null">
+                and sadc.`day_time` between #{beforeDay} and now()
+            </if>
+        </where>
+        GROUP BY sa.`company_id`,
+        sadc.`ad_id`,
+        sadc.`order_id`) a
+        GROUP BY
+        a.`slot_id`,
+        a.`ad_id`,
+        a.`style_id`,
+        a.`order_id`
+        ORDER BY day_time
+    </select>
+    <!-- 根据公司id查询 广告的曝光量 结束 -->
+
+    <!-- 生成统计折线图 开始 guofei -->
+    <select id="selectCountForLine" parameterType="java.lang.String"
+            resultMap="DisResultMap">
+        SELECT
+        sadc.`day_time`,
+        SUM(sadc.`show_count`) sumshowcount,
+        SUM(sadc.`user_count`) sumusercount
+        FROM
+        sys_ad_display_count sadc
+        LEFT
+        JOIN sys_ad sa
+        ON sadc.`ad_id` = sa.`id`
+        LEFT JOIN sys_ad_style sas
+        ON
+        sa.`style_id` = sas.`id`
+        LEFT JOIN sys_company sc
+        ON sa.`company_id` =
+        sc.`id`
+        <where>
+            sa.`status`=2
+            <if test="companyId!=null">
+                and sa.`company_id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                and sadc.`order_id`=#{adOrderId}
+            </if>
+            <if test="adId!=null">
+                and sadc.`ad_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                and sas.`id`=#{adStyleId}
+            </if>
+            <if test="beforeDay!=null">
+                and sadc.`day_time` between #{beforeDay} and now()
+            </if>
+        </where>
+        GROUP BY sadc.`day_time`
+        ORDER BY sadc.`day_time` desc;
+
+    </select>
+    <!-- 生成统计折线图 结束guofei -->
+
+    <!-- 根据公司id查询 广告的曝光量 分页 开始 -->
+    <select id="selectAdAndCountPage" resultMap="DisResultMap"
+            parameterType="java.lang.String">
+        SELECT
+        a.`ad_name`,
+        a.`slot_id` AS slot_id,
+        a.`ad_id` AS ad_id,
+        a.count_id AS count_id,
+        a.`company_id` AS company_id,
+        a.`order_id` AS
+        order_id,
+        a.`ad_name` AS ad_name,
+        a.`style_id` AS style_id,
+        a.`style_name` AS style_name,
+        a.`company_name` AS company_name,
+        a.`show_count` AS show_count,
+        a.`user_count` AS user_count
+        FROM
+        (SELECT
+        b.`slot_id` AS slot_id,
+        b.`ad_id` AS ad_id,
+        '' AS
+        count_id,
+        b.`company_id` AS company_id,
+        b.`order_id` AS order_id,
+        b.`ad_name` AS
+        ad_name,
+        b.`style_id` AS style_id,
+        b.`style_name` AS
+        style_name,
+        b.`company_name` AS company_name,
+        '' AS show_count,
+        '' AS
+        user_count,
+        ''
+        AS day_time
+        FROM
+        (SELECT
+        sys_ad_slot.`id` AS slot_id,
+        sys_ad_slot.`ad_id`
+        AS ad_id,
+        sys_ad.`company_id` AS company_id,
+        sys_order_ad.`order_id` AS
+        order_id,
+        sys_ad.`name` AS ad_name,
+        sys_ad_style.`id` AS style_id,
+        sys_ad_style.`name` AS style_name,
+        sys_company.`company_name` AS
+        company_name,
+        COUNT(sys_ad_display_count.`ad_id`) AS dis_count
+        FROM
+        sys_ad
+        RIGHT JOIN
+        sys_ad_slot
+        ON sys_ad_slot.`ad_id` =
+        sys_ad.`id`
+        LEFT
+        JOIN sys_order_ad
+        ON
+        sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT JOIN
+        sys_ad_style
+        ON
+        sys_ad_style.`id` = sys_ad.`style_id`
+        LEFT
+        JOIN
+        sys_company
+        ON
+        sys_ad.`company_id` = sys_company.`id`
+        LEFT JOIN
+        sys_ad_display_count
+        ON
+        sys_ad_display_count.`ad_id` = sys_ad.`id`
+        AND
+        sys_ad_display_count.`order_id` = sys_order_ad.`order_id`
+        <where>
+            sys_ad.`status` = 2
+            <if test="companyId!=null">
+                and sys_ad.`company_id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sys_order_ad.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                and sys_ad.`id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                and sys_ad.`style_id`=#{adStyleId}
+            </if>
+        </where>
+        GROUP BY sys_ad_slot.`ad_id`,
+        sys_order_ad.`order_id`) b
+        WHERE
+        b.`dis_count` = 0
+        UNION
+        ALL
+        SELECT
+        '' AS slot_id,
+        '' AS ad_id,
+        sadc.`id` AS
+        count_id,
+        sc.`id` AS
+        company_id,
+        sadc.`order_id`
+        AS order_id,
+        sa.`name` AS
+        ad_name,
+        sas.`id`
+        AS style_id,
+        sas.`name` AS
+        style_name,
+        sc.`company_name`,
+        SUM(sadc.`show_count`) AS show_count,
+        SUM(sadc.`user_count`) AS
+        user_count,
+        sadc.`day_time`
+        FROM
+        sys_ad_display_count sadc
+        LEFT JOIN sys_ad sa
+        ON
+        sadc.`ad_id` = sa.`id`
+        LEFT JOIN sys_ad_style sas
+        ON sa.`style_id` =
+        sas.`id`
+        LEFT JOIN
+        sys_company sc
+        ON sa.`company_id` = sc.`id`
+        <where>
+            sa.`status` = 2
+            <if test="companyId!=null">
+                and sa.`company_id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sadc.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                and sadc.`ad_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                and sas.`id`=#{adStyleId}
+            </if>
+            <if test="beforeDay!=null">
+                and sadc.`day_time` between #{beforeDay} and now()
+            </if>
+        </where>
+        GROUP BY sa.`company_id`,
+        sadc.`ad_id`,
+        sadc.`order_id`) a
+        GROUP BY
+        a.`slot_id`,
+        a.`ad_id`,
+        a.`style_id`,
+        a.`order_id`
+        ORDER BY day_time
+    </select>
+    <!-- 根据公司id查询 广告的曝光量 分页 结束 -->
+
+    <!-- 查询公司在平台曝光量 分页 开始 -->
+    <select id="selectCountPlatPage" resultMap="DisResultMap"
+            parameterType="java.lang.String">
+        SELECT
+        a.`order_id`,
+        a.`company_id`,
+        a.`company_name`,
+        '' AS
+        totalshowcount,
+        '' AS totalusercount
+        FROM
+        (SELECT
+        sys_order_ad.`order_id`,
+        sys_program.`company_id`,
+        sys_company.`company_name`,
+        sys_ad.`id` AS ad_id,
+        sys_ad.`name` AS
+        ad_name,
+        COUNT(sys_ad_display_count.`ad_id`) AS dis_count
+        FROM
+        sys_order_ad
+        LEFT JOIN sys_ad
+        ON sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT
+        JOIN sys_ad_slot
+        ON sys_ad.`id` = sys_ad_slot.`ad_id`
+        LEFT JOIN
+        sys_ad_style
+        ON sys_ad.`style_id` = sys_ad_style.`id`
+        LEFT JOIN
+        sys_video
+        ON sys_video.`id` = sys_ad_slot.`video_id`
+        LEFT JOIN
+        sys_program
+        ON sys_program.`id` = sys_video.`program_id`
+        LEFT JOIN
+        sys_company
+        ON sys_program.`company_id` = sys_company.`id`
+        LEFT JOIN
+        sys_ad_display_count
+        ON sys_ad_display_count.`ad_id` = sys_ad.`id`
+        AND
+        sys_ad_display_count.`order_id` = sys_order_ad.`order_id`
+        AND
+        sys_program.`id` = sys_ad_display_count.`program_id`
+        <where>
+            sys_ad.`status` = 2
+            AND sys_company.`company_type` = 1
+            <if test="companyId!=null">
+                AND sys_ad.`company_id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sys_order_ad.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                AND sys_ad.`style_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                AND sys_ad.`id`=#{adStyleId}
+            </if>
+        </where>
+        GROUP BY sys_order_ad.`order_id`,
+        sys_program.`company_id`) a
+        WHERE
+        a.`dis_count` = 0
+        UNION
+        ALL
+        SELECT
+        sadc.`order_id`,
+        sc.`id` AS company_id,
+        sc.`company_name`,
+        SUM(sadc.`show_count`) as totalshowcount,
+        SUM(sadc.`user_count`) as totalusercount
+        FROM
+        sys_ad_display_count sadc
+        LEFT JOIN sys_program sp
+        ON sadc.`program_id` = sp.`id`
+        LEFT JOIN
+        sys_company sc
+        ON sp.`company_id` = sc.`id`
+        LEFT JOIN sys_ad sa
+        ON
+        sa.`id` = sadc.`ad_id`
+        WHERE sadc.`ad_id` IN
+        (SELECT
+        sys_ad.`id`
+        FROM
+        sys_ad
+        LEFT JOIN sys_company
+        ON sys_company.`id` = sys_ad.`company_id`
+        LEFT JOIN sys_order_ad
+        ON sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT JOIN
+        sys_ad_style
+        ON sys_ad_style.`id` = sys_ad.`style_id`
+        <where>
+            sys_ad.`status` = 2
+            <if test="companyId!=null">
+                AND sys_company.`id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sys_order_ad.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                AND sys_ad.`style_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                AND sys_ad.`id`=#{adStyleId}
+            </if>
+        </where>
+
+        )
+        AND sa.`status` = 2
+        AND sc.`company_type` = 1
+        <if test="adOrderId!=null">
+            AND sadc.`order_id` = #{adOrderId}
+        </if>
+        <if test="beforeDay!=null">
+            and sadc.`day_time` between #{beforeDay} and now()
+        </if>
+        GROUP BY sc.`id`,
+        sadc.`order_id`
+    </select>
+    <!-- 查询公司在平台曝光量 分页 结束 -->
+
+    <!-- 查询公司在平台曝光量 导出excel 开始 -->
+    <select id="selectCountForPlat" resultMap="DisResultMap"
+            parameterType="java.lang.String">
+        SELECT
+        a.`order_id`,
+        a.`company_id`,
+        a.`company_name`,
+        '' AS
+        totalshowcount,
+        '' AS totalusercount
+        FROM
+        (SELECT
+        sys_order_ad.`order_id`,
+        sys_program.`company_id`,
+        sys_company.`company_name`,
+        sys_ad.`id` AS ad_id,
+        sys_ad.`name` AS
+        ad_name,
+        COUNT(sys_ad_display_count.`ad_id`) AS dis_count
+        FROM
+        sys_order_ad
+        LEFT JOIN sys_ad
+        ON sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT
+        JOIN sys_ad_slot
+        ON sys_ad.`id` = sys_ad_slot.`ad_id`
+        LEFT JOIN
+        sys_ad_style
+        ON sys_ad.`style_id` = sys_ad_style.`id`
+        LEFT JOIN
+        sys_video
+        ON sys_video.`id` = sys_ad_slot.`video_id`
+        LEFT JOIN
+        sys_program
+        ON sys_program.`id` = sys_video.`program_id`
+        LEFT JOIN
+        sys_company
+        ON sys_program.`company_id` = sys_company.`id`
+        LEFT JOIN
+        sys_ad_display_count
+        ON sys_ad_display_count.`ad_id` = sys_ad.`id`
+        AND
+        sys_ad_display_count.`order_id` = sys_order_ad.`order_id`
+        AND
+        sys_program.`id` = sys_ad_display_count.`program_id`
+        <where>
+            sys_ad.`status` = 2
+            AND sys_company.`company_type` = 1
+            <if test="companyId!=null">
+                AND sys_ad.`company_id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sys_order_ad.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                AND sys_ad.`style_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                AND sys_ad.`id`=#{adStyleId}
+            </if>
+        </where>
+        GROUP BY sys_order_ad.`order_id`,
+        sys_program.`company_id`) a
+        WHERE
+        a.`dis_count` = 0
+        UNION
+        ALL
+        SELECT
+        sadc.`order_id`,
+        sc.`id` AS company_id,
+        sc.`company_name`,
+        SUM(sadc.`show_count`) as totalshowcount,
+        SUM(sadc.`user_count`) as totalusercount
+        FROM
+        sys_ad_display_count sadc
+        LEFT JOIN sys_program sp
+        ON sadc.`program_id` = sp.`id`
+        LEFT JOIN
+        sys_company sc
+        ON sp.`company_id` = sc.`id`
+        LEFT JOIN sys_ad sa
+        ON
+        sa.`id` = sadc.`ad_id`
+        WHERE sadc.`ad_id` IN
+        (SELECT
+        sys_ad.`id`
+        FROM
+        sys_ad
+        LEFT JOIN sys_company
+        ON sys_company.`id` = sys_ad.`company_id`
+        LEFT JOIN sys_order_ad
+        ON sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT JOIN
+        sys_ad_style
+        ON sys_ad_style.`id` = sys_ad.`style_id`
+        <where>
+            sys_ad.`status` = 2
+            <if test="companyId!=null">
+                AND sys_company.`id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sys_order_ad.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                AND sys_ad.`style_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                AND sys_ad.`id`=#{adStyleId}
+            </if>
+        </where>
+
+        )
+        AND sa.`status` = 2
+        AND sc.`company_type` = 1
+        <if test="adOrderId!=null">
+            AND sadc.`order_id` = #{adOrderId}
+        </if>
+        <if test="beforeDay!=null">
+            and sadc.`day_time` between #{beforeDay} and now()
+        </if>
+        GROUP BY sc.`id`,
+        sadc.`order_id`
+    </select>
+    <!-- 查询公司在平台曝光量 导出excel 结束 -->
+
+    <!-- 查询公司在平台曝光量饼图 开始 -->
+    <select id="selectCountForPlatChart" resultMap="DisResultMap"
+            parameterType="java.lang.String">
+        SELECT b.`order_id`,
+        b.`company_id`,
+        b.`company_name`,
+        SUM(b.`totalshowcount`) AS totalshowcount ,
+        SUM(b.`totalusercount`) AS
+        totalusercount
+        FROM
+        (SELECT
+        a.`order_id`,
+        a.`company_id`,
+        a.`company_name`,
+        '' AS
+        totalshowcount,
+        '' AS totalusercount
+        FROM
+        (SELECT
+        sys_order_ad.`order_id`,
+        sys_program.`company_id`,
+        sys_company.`company_name`,
+        sys_ad.`id` AS ad_id,
+        sys_ad.`name` AS
+        ad_name,
+        COUNT(sys_ad_display_count.`ad_id`) AS dis_count
+        FROM
+        sys_order_ad
+        LEFT JOIN sys_ad
+        ON sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT
+        JOIN sys_ad_slot
+        ON sys_ad.`id` = sys_ad_slot.`ad_id`
+        LEFT JOIN
+        sys_ad_style
+        ON sys_ad.`style_id` = sys_ad_style.`id`
+        LEFT JOIN
+        sys_video
+        ON sys_video.`id` = sys_ad_slot.`video_id`
+        LEFT JOIN
+        sys_program
+        ON sys_program.`id` = sys_video.`program_id`
+        LEFT JOIN
+        sys_company
+        ON sys_program.`company_id` = sys_company.`id`
+        LEFT JOIN
+        sys_ad_display_count
+        ON sys_ad_display_count.`ad_id` = sys_ad.`id`
+        AND
+        sys_ad_display_count.`order_id` = sys_order_ad.`order_id`
+        AND
+        sys_program.`id` = sys_ad_display_count.`program_id`
+        <where>
+            sys_ad.`status` = 2
+            AND sys_company.`company_type` = 1
+            <if test="companyId!=null">
+                AND sys_ad.`company_id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sys_order_ad.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                AND sys_ad.`style_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                AND sys_ad.`id`=#{adStyleId}
+            </if>
+        </where>
+        GROUP BY sys_order_ad.`order_id`,
+        sys_program.`company_id`) a
+        WHERE
+        a.`dis_count` = 0
+        UNION
+        ALL
+        SELECT
+        sadc.`order_id`,
+        sc.`id` AS company_id,
+        sc.`company_name`,
+        SUM(sadc.`show_count`) as totalshowcount,
+        SUM(sadc.`user_count`) as totalusercount
+        FROM
+        sys_ad_display_count sadc
+        LEFT JOIN sys_program sp
+        ON sadc.`program_id` = sp.`id`
+        LEFT JOIN
+        sys_company sc
+        ON sp.`company_id` = sc.`id`
+        LEFT JOIN sys_ad sa
+        ON
+        sa.`id` = sadc.`ad_id`
+        WHERE sadc.`ad_id` IN
+        (SELECT
+        sys_ad.`id`
+        FROM
+        sys_ad
+        LEFT JOIN sys_company
+        ON sys_company.`id` = sys_ad.`company_id`
+        LEFT JOIN sys_order_ad
+        ON sys_order_ad.`ad_id` = sys_ad.`id`
+        LEFT JOIN
+        sys_ad_style
+        ON sys_ad_style.`id` = sys_ad.`style_id`
+        <where>
+            sys_ad.`status` = 2
+            <if test="companyId!=null">
+                AND sys_company.`id`=#{companyId}
+            </if>
+            <if test="adOrderId!=null">
+                AND sys_order_ad.`order_id` = #{adOrderId}
+            </if>
+            <if test="adId!=null">
+                AND sys_ad.`style_id`=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                AND sys_ad.`id`=#{adStyleId}
+            </if>
+        </where>
+
+        )
+        AND sa.`status` = 2
+        AND sc.`company_type` = 1
+        <if test="adOrderId!=null">
+            AND sadc.`order_id` = #{adOrderId}
+        </if>
+        <if test="beforeDay!=null">
+            and sadc.`day_time` between #{beforeDay} and now()
+        </if>
+        GROUP BY sc.`id`,
+        sadc.`order_id`) AS b
+        GROUP BY b.`company_id`
+    </select>
+    <!-- 查询公司在平台曝光量饼图 结束 -->
+
+    <!-- 统计前一天的曝光量、用户量 开始 -->
+    <select id="selectDisplayCount" resultMap="BaseResultMap"
+            parameterType="java.lang.String">
+        SELECT
+            tem.`ad_id`,
+            tem.`order_id`                orderId,
+            tem.`program_id`,
+            COUNT(DISTINCT tem.device_id) user_count,
+            SUM(tem.show_count)           show_count,
+            NOW()                         created
+        FROM
+            (
+                SELECT
+                    sadr.`ad_id`,
+                    sadr.`order_id`,
+                    sadr.`program_id`,
+                    sadr.`display_time`,
+                    sadr.`device_id`,
+                    COUNT(1) AS show_count
+                FROM
+                    sys_ad_display_record sadr
+                WHERE
+                    sadr.`display_time` >= #{beforeDay}
+                    AND sadr.`display_time` &lt; #{nowDay}
+                GROUP BY
+                    sadr.`ad_id`,
+                    sadr.`order_id`,
+                    sadr.`program_id`,
+                    sadr.`device_id`
+            ) AS tem
+        GROUP BY
+            tem.`ad_id`,
+            tem.`order_id`,
+            tem.`program_id`
+    </select>
+    <!-- 统计前一天的曝光量、用户量、点击次数 结束 -->
+
+    <!-- 统计前一天的点击量 开始 -->
+    <select id="selectDisplayClickCount" resultMap="BaseResultMap"
+            parameterType="java.lang.String">
+        SELECT
+            sacr.`order_id`          orderId,
+            sacr.`click_time`,
+            sacr.`program_id`,
+            count(sacr.`program_id`) clickCount
+        FROM sys_ad_click_record sacr
+        WHERE sacr.`click_time` >= #{beforeDay}
+              AND sacr.`click_time` &lt; #{nowDay}
+        GROUP BY sacr.`program_id`, sacr.`order_id`
+    </select>
+    <!-- 统计前一天的点击量 结束 -->
+    <!-- edited by mxy on 2017-04-19 16:14 begin -->
+    <!--获取广告相关曝光信息（按日期统计） -->
+    <select id="getAdCountList4Chart" resultMap="getAdCountList4ChartMap"
+            parameterType="com.entgroup.adms.model.system.AdDisplayCount">
+        SELECT
+        addc.id,
+        GROUP_CONCAT(DISTINCT addc.id) AS ids,
+        SUM(addc.show_count) AS show_count,
+        SUM(addc.user_count) AS user_count,
+        addc.day_time,
+        addc.order_id,
+        ad.id AS ad_id,
+        ad.name AS ad_name,
+        ads.id
+        AS ad_style_id,
+        ads.name AS ad_style_name,
+        com.id AS company_id,
+        com.company_name,
+        com.short_name
+        FROM
+        sys_ad_display_count addc
+        LEFT JOIN
+        sys_ad ad
+        ON addc.ad_id = ad.id
+        LEFT JOIN sys_ad_style ads
+        ON ad.style_id
+        = ads.id
+        LEFT JOIN sys_company com
+        ON ad.company_id = com.id
+        <trim prefix="WHERE" prefixOverrides="AND |OR">
+            ad.status = 2
+            AND ad.order_online = 1
+            <if test="companyId!=null">
+                and ad.company_id=#{companyId}
+            </if>
+            <if test="adId!=null">
+                and ad.id=#{adId}
+            </if>
+            <if test="adStyleId!=null">
+                and ad.style_id=#{adStyleId}
+            </if>
+            <choose>
+                <when test="tortTimeStart ==null and tortTimeEnd !=null">
+                    AND addc.day_time &lt; #{tortTimeEnd}
+                </when>
+                <when test="tortTimeStart !=null and tortTimeEnd ==null">
+                    AND addc.day_time &gt; #{tortTimeStart}
+                </when>
+                <when test="tortTimeStart !=null and tortTimeEnd !=null">
+                    AND addc.day_time between #{tortTimeStart} and
+                    #{tortTimeEnd}
+                </when>
+                <otherwise></otherwise>
+            </choose>
+        </trim>
+        GROUP BY addc.day_time
+    </select>
+
+    <!--ORDER BY addc.day_time DESC -->
+    <resultMap type="com.entgroup.adms.model.system.AdDisplayCount"
+               id="getAdCountList4ChartMap" extends="BaseResultMap">
+        <id column="id" property="id"/>
+        <result column="ids" property="ids"/>
+        <result column="order_id" property="orderId"/>
+        <result column="ad_id" property="adId"/>
+        <result column="show_count" property="showCount"/>
+        <result column="user_count" property="userCount"/>
+        <result column="day_time" property="dayTime"/>
+        <association property="ad" javaType="com.entgroup.adms.model.system.Ad">
+            <id column="ad_id" property="id"/>
+            <result column="ad_name" property="name"/>
+        </association>
+        <association property="adStyle"
+                     javaType="com.entgroup.adms.model.system.AdStyle">
+            <id column="ad_style_id" property="id"/>
+            <result column="ad_style_name" property="name"/>
+        </association>
+        <association property="company"
+                     javaType="com.entgroup.adms.model.system.Company">
+            <id column="company_id" property="id"/>
+            <result column="company_name" property="companyName"/>
+            <result column="short_name" property="shortName"/>
+        </association>
+    </resultMap>
+    <!-- edited by mxy on 2017-04-19 16:37 end -->
+
+
+    <!-- edited by cuixiaokun on 2017-04-19 16:37 start -->
+    <!--数据统计页面查询逻辑-->
+    <resultMap id="DisplayCountResultMap" type="com.entgroup.adms.dto.DisplayCountResultDTO">
+        <result column="platform_id" property="platformId"/>
+        <result column="platform_name" property="platformName"/>
+        <result column="program_type_id" property="programTypeId"/>
+        <result column="program_type_name" property="programTypeName"/>
+        <result column="slot_online" property="slotOnline"/>
+        <result column="slot_offline" property="slotOffline"/>
+        <result column="show_counts" property="showCounts"/>
+        <result column="click_counts" property="clickCounts"/>
+        <!-- edited by qmh on 2017-06-30 09:52 start -->
+        <result column="total_money" property="totalMoney"/>
+        <result column="cosume_money" property="cosumeMoney"/>
+        <result column="order_name" property="orderName"/>
+        <result column="begin_time" property="beginTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="ctr" property="ctr" />
+        <!-- edited by qmh on 2017-06-30 09:52 end -->
+        <result column="cash" property="cash"/>
+        <result column="slot_count" property="slotCount" />
+        <result column="slot_ids" property="slotIds" />
+        <result column="order_id" property="orderId" />
+        <result column="order_status" property="orderStatus" />
+        <result column="company_id" property="companyId" />
+        <result column="group_by" property="groupBy" />
+    </resultMap>
+    <!--基于视频平台-->
+    <select id="getAdDisplayCountByPlatform" parameterType="com.entgroup.adms.model.system.AdOrder" resultMap="DisplayCountResultMap">
+        SELECT
+            platform.id AS platform_id,
+            platform.company_name AS platform_name,
+            count(slot.id) AS slot_online,
+            count(finished.ad_slot_ids) AS slot_offline,
+            SUM(displayCount.show_count) AS show_counts,
+            SUM(displayCount.click_count) AS click_counts,
+            SUM(displayCount.show_count*(style.price/style.price_unit)*programLevel.price*platformPrice.price_factor) AS cash
+        FROM sys_program_type programType
+        LEFT JOIN sys_program program ON program.type_id = programType.id
+        LEFT JOIN sys_video video ON video.program_id = program.id
+        LEFT JOIN sys_ad_slot slot ON video.id = slot.video_id
+        LEFT JOIN sys_ad_order adOrder ON adOrder.id = slot.order_id
+        LEFT JOIN sys_order_finished_info finished ON adOrder.id = finished.order_id AND adOrder.status = 2
+        LEFT JOIN sys_company company ON company.id = adOrder.company_id
+        LEFT JOIN sys_ad ad ON slot.ad_id = ad.id
+        LEFT JOIN sys_ad_style style ON style.id = ad.style_id
+        LEFT JOIN sys_ad_display_count displayCount ON displayCount.ad_id = ad.id
+        LEFT JOIN sys_program_level programLevel ON programLevel.id = program.level_id
+        LEFT JOIN sys_company platform ON platform.id = program.company_id
+        LEFT JOIN sys_platform_price platformPrice ON platformPrice.company_id = platform.id AND platformPrice.level_id
+        = program.level_id
+        <trim prefix="where" prefixOverrides="AND|OR">
+            <if test="null != companyId">
+                AND company.id = #{companyId}
+            </if>
+            <if test="null != id">
+                AND adOrder.id = #{id}
+            </if>
+            AND slot.id > 0
+        </trim>
+        GROUP BY platform.id
+    </select>
+
+    <!--基于节目类型-->
+    <select id="getAdDisplayCountByProgramType" parameterType="com.entgroup.adms.model.system.AdOrder" resultMap="DisplayCountResultMap">
+        SELECT
+            programType.id AS program_type_id,
+            programType.name program_type_name,
+            GROUP_CONCAT(slot.id) AS slot_online,
+            GROUP_CONCAT(finished.ad_slot_ids) AS slot_offline,
+            SUM(displayCount.show_count) AS show_counts,
+            SUM(displayCount.click_count) AS click_counts,
+            SUM(displayCount.show_count*(style.price/style.price_unit)*programLevel.price*platformPrice.price_factor) AS cash
+        FROM sys_program_type programType
+        LEFT JOIN sys_program program ON program.type_id = programType.id
+        LEFT JOIN sys_video video ON video.program_id = program.id
+        LEFT JOIN sys_ad_slot slot ON video.id = slot.video_id
+        LEFT JOIN sys_ad_order adOrder ON adOrder.id = slot.order_id
+        LEFT JOIN sys_order_finished_info finished ON adOrder.id = finished.order_id AND adOrder.status = 2
+        LEFT JOIN sys_company company ON company.id = adOrder.company_id
+        LEFT JOIN sys_ad ad ON slot.ad_id = ad.id
+        LEFT JOIN sys_ad_style style ON style.id = ad.style_id
+        LEFT JOIN sys_ad_display_count displayCount ON displayCount.ad_id = ad.id
+        LEFT JOIN sys_program_level programLevel ON programLevel.id = program.level_id
+        LEFT JOIN sys_company platform ON platform.id = program.company_id
+        LEFT JOIN sys_platform_price platformPrice ON platformPrice.company_id = platform.id AND platformPrice.level_id
+        = program.level_id
+        <trim prefix="where" prefixOverrides="AND|OR">
+            <if test="null != companyId">
+                AND company.id = #{companyId}
+            </if>
+            <if test="null != id">
+                AND adOrder.id = #{adOrderId}
+                AND adOrder.id = #{id}
+            </if>
+        </trim>
+        GROUP BY programType.id
+    </select>
+    <!-- edited by cuixiaokun on 2017-04-19 16:37 end -->
+
+    <!-- edited by cuixiaokun on 2017-04-19 16:37 begin -->
+    <!--1、查询所有slot_ids-->
+    <select id="getAllSlotIds" parameterType="com.entgroup.adms.model.system.AdOrder" resultMap="DisplayCountResultMap">
+        SELECT
+            GROUP_CONCAT(IF(adOrder.status = 2, finishedInfo.ad_slot_ids, CONCAT(slot.id))) AS slot_ids
+        FROM sys_ad_order adOrder
+        LEFT JOIN sys_ad_slot slot ON slot.order_id = adOrder.id
+        LEFT JOIN sys_order_finished_info finishedInfo ON finishedInfo.order_id = adOrder.id
+        <trim prefix="where" prefixOverrides="AND|OR">
+            <if test="null != companyId">
+                AND adOrder.company_id = #{companyId}
+            </if>
+        </trim>
+    </select>
+
+    <!--2、查询对应广告位数量-->
+    <select id="getSlotIdsGroup" parameterType="com.entgroup.adms.dto.DisplayCountResultDTO" resultMap="DisplayCountResultMap">
+        SELECT
+            GROUP_CONCAT(DISTINCT platform.id) AS platform_id,
+            GROUP_CONCAT(DISTINCT platform.company_name) AS platform_name,
+            GROUP_CONCAT(DISTINCT programType.id) AS program_type_id,
+            GROUP_CONCAT(DISTINCT programType.name) AS program_type_name,
+        GROUP_CONCAT(DISTINCT slot.id) AS slot_ids
+        FROM sys_ad_slot slot
+        LEFT JOIN sys_video video ON slot.video_id = video.id
+        LEFT JOIN sys_program program ON video.program_id = program.id
+        LEFT JOIN sys_program_type programType ON program.type_id = programType.id
+        LEFT JOIN sys_company platform ON platform.id = program.company_id
+        <trim prefix="where" prefixOverrides="AND|OR">
+            <if test="null != slotIds">
+                AND slot.id IN (${slotIds})
+            </if>
+        </trim>
+        <if test="null != groupBy">
+            GROUP BY ${groupBy}
+        </if>
+    </select>
+
+
+    <!--3、点击量、曝光量、消费-->
+    <select id="getDisplayCountGroup" parameterType="com.entgroup.adms.dto.DisplayCountResultDTO" resultMap="DisplayCountResultMap">
+        SELECT
+            GROUP_CONCAT(DISTINCT platform.id) AS platform_id,
+            GROUP_CONCAT(DISTINCT platform.company_name) AS platform_name,
+            GROUP_CONCAT(DISTINCT programType.id) AS program_type_id,
+            GROUP_CONCAT(DISTINCT programType.name) AS program_type_name,
+            SUM(displayCount.show_count) AS show_counts,
+            SUM(displayCount.click_count) AS click_counts,
+            SUM(platformPrice.price_factor*programLevel.price*adStyle.price/adStyle.price_unit*displayCount.show_count) AS cash
+        FROM sys_ad_display_count displayCount
+
+        LEFT JOIN sys_ad_order adOrder ON adOrder.id = displayCount.order_id
+
+        LEFT JOIN sys_ad ad ON ad.id = displayCount.ad_id
+        LEFT JOIN sys_ad_style adStyle ON adStyle.id = ad.style_id
+        LEFT JOIN sys_program program ON program.id = displayCount.program_id
+        LEFT JOIN sys_program_type programType ON programType.id = program.type_id
+        LEFT JOIN sys_program_level programLevel ON programLevel.id = program.level_id
+        LEFT JOIN sys_company platform ON platform.id = program.company_id
+        LEFT JOIN sys_platform_price platformPrice ON platformPrice.company_id = platform.id AND platformPrice.level_id = program.level_id
+        <trim prefix="where" prefixOverrides="AND|OR">
+            <if test="null != companyId">
+                AND adOrder.company_id = #{companyId}
+            </if>
+        </trim>
+        <if test="null != groupBy">
+            GROUP BY ${groupBy}
+        </if>
+    </select>
+
+    <!-- edited by qmh on 2017-06-30 09:52 start -->
+    <!--基于广告-->
+    <select id="getAdDisplayCountByAd" parameterType="com.entgroup.adms.model.system.AdOrder"
+            resultMap="DisplayCountResultMap">
+        SELECT
+        adOrder.id order_id,
+        adOrder.`order_name`,
+        adOrder.`begin_time`,
+        adOrder.`end_time`,
+        SUM(displayCount.show_count) AS show_counts,
+        SUM(displayCount.click_count) AS click_counts,
+        adOrder.`total_money`,
+        adOrder.`cosume_money`,
+        ROUND(SUM(displayCount.`click_count`)/SUM(displayCount.`show_count`)*100,2) ctr
+        FROM sys_ad_order adOrder
+        LEFT JOIN sys_company company ON company.id = adOrder.company_id
+        LEFT JOIN sys_ad_display_count displayCount ON displayCount.`order_id` = adOrder.`id`
+        <trim prefix="where" prefixOverrides="AND|OR">
+            <if test="null != companyId">
+                AND company.id = #{companyId}
+            </if>
+        </trim>
+        GROUP BY adOrder.`id`
+        order by ctr  desc,adOrder.id desc
+    </select>
+    <!--基于广告-->
+
+    <!-- edited by qmh on 2017-06-30 09:52 end -->
+</mapper>

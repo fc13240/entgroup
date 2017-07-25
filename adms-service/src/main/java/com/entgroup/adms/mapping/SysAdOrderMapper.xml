@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AdOrderMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.AdOrder">
+		<id column="id" property="id" />
+		<result column="company_id" property="companyId" />
+		<result column="ad_count" property="adCount" />
+		<result column="slot_count" property="slotCount" />
+		<result column="total_money" property="totalMoney" />
+		<result column="cosume_money" property="cosumeMoney" />
+		<result column="status" property="status" />
+
+		<result column="created" property="created" />
+		<result column="begin_time" property="beginTime" />
+		<result column="end_time" property="endTime" />
+
+		<result column="remark" property="remark" />
+		<result column="begin_time" property="beginTime" />
+		<result column="end_time" property="endTime" />
+		<result column="order_name" property="orderName" />
+		<result column="tracking_code" property="trackingCode" />
+		<result column="selected" property="selected" />
+
+	</resultMap>
+
+	<!-- 通用查询结果列 -->
+	<sql id="Base_Column_List">
+		id, company_id AS companyId, ad_count AS adCount,
+		slot_count AS
+		slotCount, total_money AS totalMoney, cosume_money AS
+		cosumeMoney,
+
+		status, created,begin_time AS beginTime, end_time AS endTime
+
+		status, created, remark, begin_time AS beginTime, end_time AS endTime, name AS orderName, tracking_code AS
+		trackingCode
+
+	</sql>
+
+
+	<!-- 修改广告订单 的广告位总数 liuxiaolong -->
+	<update id="updateAdOrderSlotCount" parameterType="java.lang.Long">
+		UPDATE sys_ad_order ,sys_order_ad
+		SET sys_ad_order.slot_count =
+		sys_ad_order.slot_count+(SELECT
+		COUNT(sys_ad_slot.`id`) FROM
+		sys_ad_slot WHERE sys_ad_slot.`ad_id` =
+		sys_order_ad.`ad_id` )
+		<where>
+			sys_ad_order.`id` = sys_order_ad.`order_id`
+			and
+			sys_order_ad.`ad_id`= #{adId}
+		</where>
+	</update>
+
+	<!-- 获取订单列表 开始  guofei-->
+	<resultMap type="com.entgroup.adms.dto.AdOrderListDTO" id="adOrderReusltMap">
+		<id column="id" property="id" />
+		<result column="order_name" property="orderName" />
+		<result column="company_id" property="companyId" />
+		<result column="ad_count" property="adCount" />
+		<result column="slot_count" property="slotCount" />
+		<result column="total_money" property="totalMoney" />
+		<result column="cosume_money" property="cosumeMoney" />
+		<result column="status" property="status" />
+		<result column="created" property="created" />
+		<result column="company_name" property="companyName" />
+	</resultMap>
+	<select id="selectAdOrderPage" parameterType="java.lang.String"
+		resultMap="adOrderReusltMap">
+		SELECT
+		sao.`id`,
+		sao.`order_name`,
+		sao.`company_id`,
+		sao.`ad_count`,
+		sao.`slot_count`,
+		sao.`total_money`,
+		sao.`cosume_money`,
+		sao.`status`,
+		sao.`created`,
+		sao.`remark`,
+		sc.`company_name`
+		FROM
+		sys_ad_order sao
+		LEFT JOIN
+		sys_company sc
+		ON sao.`company_id` = sc.`id`
+		<where>
+			<if test="companyId!=null">
+				sao.`company_id` = #{companyId}
+			</if>
+			<if test="slotCount!=null">
+				and sao.`slot_count` = #{slotCount}
+			</if>
+			<if test="status!=null">
+				and sao.`status` = #{status}
+			</if>
+			<if test="orderName!=null">
+				and sao.`order_name` like CONCAT('%',#{orderName},'%')
+			</if>
+			<if test="proceed!=null">
+				and sao.`slot_count`>0
+			</if>
+		</where>
+		order by sao.`created` desc
+	</select>
+
+	<!-- 获取订单列表 结束 -->
+
+	<!-- 添加订单 开始  guofei-->
+	<insert id="insertAdOrder" parameterType="com.entgroup.adms.model.system.AdOrder">
+		INSERT INTO sys_ad_order
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id!=null">
+				id,
+			</if>
+			<if test="companyId!=null">
+				company_id,
+			</if>
+			<if test="adCount!=null">
+				ad_count,
+			</if>
+			<if test="slotCount!=null">
+				slot_count,
+			</if>
+			<if test="totalMoney!=null">
+				total_money,
+			</if>
+			<if test="cosumeMoney!=null">
+				cosume_money,
+			</if>
+			<if test="status!=null">
+				`status`,
+			</if>
+			created,
+			<if test="remark!=null">
+				remark,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id!=null">
+				#{id},
+			</if>
+			<if test="companyId!=null">
+				#{companyId},
+			</if>
+			<if test="adCount!=null">
+				#{adCount},
+			</if>
+			<if test="slotCount!=null">
+				#{slotCount},
+			</if>
+			<if test="totalMoney!=null">
+				#{totalMoney},
+			</if>
+			<if test="cosumeMoney!=null">
+				#{cosumeMoney},
+			</if>
+			<if test="status!=null">
+				#{status},
+			</if>
+			now(),
+			<if test="remark!=null">
+				#{remark},
+			</if>
+		</trim>
+	</insert>
+	<!-- 添加订单 结束 -->
+	<!-- 统计页面获取订单下拉框 开始  guofei-->
+	<resultMap type="com.entgroup.adms.dto.AdAndStyleByCompanyDTO"
+		id="orderIdReusltMap">
+		<id column="order_id" property="adOrderId" />
+	</resultMap>
+	<select id="selectOrderList" parameterType="java.lang.String"
+		resultMap="orderIdReusltMap">
+		SELECT sys_ad_order.`id` AS order_id
+		FROM sys_ad_order
+		<where>
+			<if test="companyId!=null">
+			sys_ad_order.`company_id`=#{companyId}
+			</if>
+		</where>
+		ORDER BY sys_ad_order.`created` DESC
+	</select>
+	<!-- 统计页面获取订单下拉框 结束 -->
+
+	<!--新增-->
+	<insert id="insertAdOrderTemp" parameterType="com.entgroup.adms.model.system.AdOrder">
+		INSERT INTO sys_ad_order(
+			id,
+			company_id,
+			ad_count,
+			slot_count,
+			total_money,
+			cosume_money,
+			status,
+			created,
+			remark,
+			begin_time,
+			end_time,
+			order_name,
+			tracking_code
+		) VALUES (
+			#{id},
+			#{companyId},
+			#{adCount},
+			#{slotCount},
+			#{totalMoney},
+			#{cosumeMoney},
+			#{status},
+			#{created},
+			#{remark},
+			#{beginTime},
+			#{endTime},
+			#{orderName},
+			#{trackingCode}
+		)
+	</insert>
+
+	<!--Edit by cuixiaokun @ 2017-06-28 19:55 Begin-->
+	<!--获取订单列表页-->
+	<resultMap id="adOrderListResultMap" type="com.entgroup.adms.model.system.AdOrder" extends="BaseResultMap">
+		<result column="last_date" property="lastDate" />
+		<result column="slot_counts" property="slotCounts" />
+	</resultMap>
+
+	<select id="adOrderList" parameterType="com.entgroup.adms.model.system.AdOrder" resultMap="adOrderListResultMap">
+		SELECT
+		order.id,
+		order.company_id,
+		order.ad_count,
+		order.slot_count,
+		order.total_money,
+		order.cosume_money,
+		order.status,
+		order.selected,
+		order.created,
+		order.remark,
+		order.begin_time,
+		order.end_time,
+		order.order_name,
+		order.tracking_code,
+		TIMESTAMPDIFF(DAY, NOW(), order.end_time) AS last_date,
+
+		GROUP_CONCAT(CONCAT(slot.id,'-',slot.ad_id)) AS slot_counts
+		FROM sys_ad_order `order`
+		LEFT JOIN sys_ad_slot slot ON slot.order_id = order.id
+		<trim prefix="where" prefixOverrides="AND|OR">
+			<if test="null != companyId">
+				AND order.company_id = #{companyId}
+			</if>
+			<if test="null != orderName">
+				AND order.order_name LIKE CONCAT('%',#{orderName},'%')
+			</if>
+			<if test="null != status">
+				AND order.status = #{status}
+			</if>
+			<if test="null != manageCompanyIds">
+				AND order.company_id IN (${manageCompanyIds})
+			</if>
+			<if test="null != id">
+				AND order.id = #{id}
+			</if>
+		</trim>
+		GROUP BY order.id
+		ORDER BY order.created DESC
+	</select>
+	<!--Edit by cuixiaokun @ 2017-06-28 19:55   End-->
+</mapper>

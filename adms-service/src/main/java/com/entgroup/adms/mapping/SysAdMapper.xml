@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AdMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.Ad">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="link" property="link" />
+		<result column="image_path" property="imagePath" />
+		<result column="link_mobile" property="linkMobile" />
+		<result column="company_id" property="companyId" />
+		<result column="order_online" property="orderOnline" />
+		<result column="creator_id" property="creatorId" />
+		<result column="created" property="created" />
+		<result column="start_time" property="startTime" />
+		<result column="end_time" property="endTime" />
+		<result column="priority" property="priority" />
+		<result column="type_id" property="typeId" />
+		<result column="status" property="status" />
+		<result column="review_time" property="reviewTime" />
+		<result column="style_id" property="styleId" />
+		<result column="ad_slot_num" property="adSlotNum" />
+		<result column="tracking_code" property="trackingCode" />
+	</resultMap>
+
+
+	<!-- 通用查询结果列 -->
+	<sql id="Base_Column_List">
+		id, name, link, company_id AS companyId, order_online AS
+		orderOnline,
+		creator_id AS creatorId, created, start_time AS startTime,
+		end_time AS
+		endTime, priority, type_id AS typeId, status, review_time
+		AS
+		reviewTime, style_id AS styleId, link_mobile AS linkMobile,
+		tracking_code AS trackingCode
+	</sql>
+	<!-- 查询广告列表 -->
+	<select id="selectAdList" resultMap="BaseResultMap">
+		select
+		ad.id,ad.`name`,ad.style_id,ad.type_id,ad.image_path,ad.link,slot.id
+		AS slotId,
+		slot.video_id AS videoId,slot.video_position AS showTime
+		from sys_ad ad
+		left join sys_ad_slot slot on slot.ad_id = ad.id
+		<trim prefix="where" prefixOverrides="AND/OR">
+			1=1 AND  slot.ad_id <![CDATA[ <> ]]> 0
+			<if test="videoId != null and videoId != '' ">
+				and slot.video_id = #{videoId}
+			</if>
+		</trim>
+		order by ad.id;
+	</select>
+
+
+
+	<!-- 查询待审核的广告 开始 liuxiaolong -->
+	<resultMap type="com.entgroup.adms.dto.AdDTO" id="audiAdMap">
+		<id property="adId" column="id" />
+		<id property="styleId" column="style_id" />
+		<id property="typeId" column="type_id" />
+		<id property="orderId" column="order_id" />
+		<result property="created" column="created" />
+		<result property="companyName" column="company_name" />
+		<result property="adName" column="ad_name" />
+		<result property="styleName" column="style_name" />
+		<result property="typeName" column="type_name" />
+		<result property="adSlotNum" column="ad_slot_num" />
+		<result property="adStatus" column="ad_status" />
+		<result property="newDate" column="new_date" />
+	</resultMap>
+
+	<!-- 列表查询待审核的广告 liuxiaolong -->
+	<select resultMap="audiAdMap" parameterType="java.lang.String"
+		id="selectAudiAdList">
+		SELECT
+		tab.id ,
+		tab.created ,
+		tab.company_name ,
+		tab.ad_name ,
+		tab.style_name ,
+		tab.type_name ,
+		tab.ad_status
+		FROM
+		(
+		SELECT
+		sys_ad.id,
+		sys_ad.`created`,
+		sys_ad.`status` AS just_status,
+		sys_company.`company_name`,
+		sys_ad.name AS ad_name,
+		sys_ad_style.`name`
+		AS style_name,
+		sys_ad_type.`name` AS type_name ,
+		sys_company.id AS
+		company_id ,
+		sys_ad.creator_id AS creator_id ,
+		sys_user.admin AS
+		user_admin ,
+		CASE WHEN sys_ad.`status` = 1 THEN '1'
+		WHEN
+		sys_ad.`status`=2 AND (SELECT COUNT(sys_ad_slot.`id`) FROM
+		sys_ad_slot
+		WHERE sys_ad_slot.`ad_id`= sys_ad.`id`)=0 THEN '2'
+		WHEN
+		sys_ad.`status`=2 AND (SELECT COUNT(sys_ad_slot.`id`) FROM
+		sys_ad_slot
+		WHERE sys_ad_slot.`ad_id`= sys_ad.`id`) !=0 THEN '3'
+		WHEN
+		sys_ad.`status`=3 THEN '4' END AS ad_status
+		FROM sys_ad
+		LEFT JOIN
+		sys_company ON sys_ad.`company_id`=sys_company.id AND
+		sys_company.`company_type`=2
+		LEFT JOIN sys_ad_style ON
+		sys_ad.`style_id`=sys_ad_style.`id`
+		LEFT JOIN sys_ad_type ON
+		sys_ad.`type_id`=sys_ad_type.id
+		LEFT JOIN sys_user ON sys_user.`id` =
+		sys_ad.`creator_id`
+		) tab
+		<where>
+			<if test="adStatus != null and adStatus != '' ">
+				tab.just_status = #{adStatus}
+			</if>
+			<if test="companyId !=null and companyId != '' ">
+				and tab.company_id = #{companyId}
+			</if>
+			<if test="adName !=null and adName != '' ">
+				and tab.ad_name like CONCAT('%',#{adName},'%')
+			</if>
+			<if test="userId != null and userId != '' ">
+				AND tab.creator_id = #{userId}
+			</if>
+			<if test="userType != null and userType != '' ">
+				AND tab.user_admin = #{userType}
+			</if>
+			<if test="delivStatus != null and delivStatus != '' ">
+				AND tab.ad_status = #{delivStatus}
+			</if>
+		</where>
+		order by tab.created desc
+	</select>
+
+	<!-- 分页查询待审核的广告 liuxiaolong -->
+	<select resultMap="audiAdMap" parameterType="java.lang.String"
+		id="selectAudiAdPage">
+		SELECT
+		tab.id ,
+		tab.created ,
+		tab.company_name ,
+		tab.ad_name ,
+		tab.style_name ,
+		tab.type_name ,
+		tab.ad_status
+		FROM
+		(
+		SELECT
+		sys_ad.id,
+		sys_ad.`created`,
+		sys_ad.`status` AS just_status,
+		sys_company.`company_name`,
+		sys_ad.name AS ad_name,
+		sys_ad_style.`name`
+		AS style_name,
+		sys_ad_type.`name` AS type_name ,
+		sys_company.id AS
+		company_id ,
+		sys_ad.creator_id AS creator_id ,
+		sys_user.admin AS
+		user_admin ,
+		CASE WHEN sys_ad.`status` = 1 THEN '1'
+		WHEN
+		sys_ad.`status`=2 AND (SELECT COUNT(sys_ad_slot.`id`) FROM
+		sys_ad_slot
+		WHERE sys_ad_slot.`ad_id`= sys_ad.`id`)=0 THEN '2'
+		WHEN
+		sys_ad.`status`=2 AND (SELECT COUNT(sys_ad_slot.`id`) FROM
+		sys_ad_slot
+		WHERE sys_ad_slot.`ad_id`= sys_ad.`id`) !=0 THEN '3'
+		WHEN
+		sys_ad.`status`=3 THEN '4' END AS ad_status
+		FROM sys_ad
+		LEFT JOIN
+		sys_company ON sys_ad.`company_id`=sys_company.id AND
+		sys_company.`company_type`=2
+		LEFT JOIN sys_ad_style ON
+		sys_ad.`style_id`=sys_ad_style.`id`
+		LEFT JOIN sys_ad_type ON
+		sys_ad.`type_id`=sys_ad_type.id
+		LEFT JOIN sys_user ON sys_user.`id` =
+		sys_ad.`creator_id`
+		) tab
+		<where>
+			<if test="adStatus != null and adStatus != '' ">
+				tab.just_status = #{adStatus}
+			</if>
+			<if test="companyId !=null and companyId != '' ">
+				and tab.company_id = #{companyId}
+			</if>
+			<if test="adName !=null and adName != '' ">
+				and tab.ad_name like CONCAT('%',#{adName},'%')
+			</if>
+			<if test="userId != null and userId != '' ">
+				AND tab.creator_id = #{userId}
+			</if>
+			<if test="userType != null and userType != '' ">
+				AND tab.user_admin = #{userType}
+			</if>
+			<if test="delivStatus != null and delivStatus != '' ">
+				AND tab.ad_status = #{delivStatus}
+			</if>
+		</where>
+		order by tab.created desc
+	</select>
+	<!-- 结束 -->
+	<!-- 修改广告状态 liuxiaolong -->
+	<update id="updateAdStatus" parameterType="java.lang.String">
+		update sys_ad
+		<trim prefix="set" suffixOverrides=",">
+			<if test="nowTime !=null and nowTime != ''  ">
+				sys_ad.review_time = #{nowTime},
+			</if>
+			<if test="adStatus !=null and adStatus != '' ">
+				sys_ad.status = #{adStatus}
+			</if>
+		</trim>
+		<where>
+			sys_ad.id = #{adId}
+		</where>
+	</update>
+
+	<!-- 投放广告列表 开始 liuxiaolong -->
+	<select id="selectDeliveAdPage" resultMap="audiAdMap"
+		parameterType="java.lang.String">
+		SELECT
+		sys_ad.id,
+		sys_ad.`created`,
+		sys_company.`company_name`,
+		sys_ad.name as ad_name,
+		sys_ad_style.`name` as style_name,
+		sys_ad_type.`name` as type_name ,
+		sys_ad_style.id as style_id ,
+		sys_ad_type.id as type_id ,
+		sys_ad_order.id as order_id ,
+		(select
+		count(*) from sys_ad_slot where sys_ad_slot.`ad_id`=sys_ad.`id`) as
+		ad_slot_num
+		FROM sys_ad
+		LEFT JOIN sys_company ON
+		sys_ad.`company_id`=sys_company.id and sys_company.`company_type`=2
+		LEFT JOIN sys_ad_style ON sys_ad.`style_id`=sys_ad_style.`id`
+		LEFT JOIN
+		sys_ad_type ON sys_ad.`type_id`=sys_ad_type.id
+		LEFT JOIN sys_order_ad
+		ON sys_ad.`id` = sys_order_ad.`ad_id` and sys_order_ad.`deleted`=0
+		left join sys_ad_order on sys_ad_order.`id`=sys_order_ad.`order_id`
+		<where>
+			<if test="adStatus != null and adStatus != '' ">
+				sys_ad.status = #{adStatus}
+			</if>
+			<if test="companyId !=null and companyId != '' ">
+				and sys_company.id = #{companyId}
+			</if>
+			<if test="adName !=null and adName != '' ">
+				and sys_ad.name like CONCAT('%',#{adName},'%')
+			</if>
+			<if test="styleId !=null and styleId != '' ">
+				and sys_ad_style.id =#{styleId}
+			</if>
+		</where>
+		order by sys_ad.`created` desc
+	</select>
+	<!-- 结束 -->
+
+	<!-- 广告投放时间更新 liuxiaolong -->
+	<update id="updateAdStartTime" parameterType="java.lang.String">
+		update sys_ad set sys_ad.start_time = #{startTime}
+		<where>
+			sys_ad.id = #{adId}
+		</where>
+	</update>
+	
+	
+	<resultMap type="com.entgroup.adms.dto.AdAndStyleByCompanyDTO"
+		id="adResultMap">
+		<result property="adId" column="ad_id" />
+		<result property="adName" column="ad_name" />
+	</resultMap>
+	<!-- 根据公司id获取对应的广告以及广告的样式名 开始 guofei -->
+	<select id="selectAdListByCompany" parameterType="java.lang.String"
+		resultMap="audiAdMap">
+		SELECT
+		sa.`id`,
+		sa.`name` AS ad_name,
+		sas.`name` AS style_name,
+		sa.`created` AS new_date
+		FROM
+		sys_ad AS sa
+		LEFT JOIN sys_ad_style sas
+		ON
+		sa.`style_id`
+		= sas.`id`
+		WHERE sa.`order_online`=0 and
+		sa.`company_id` = #{companyId}
+		order by sa.`created`
+	</select>
+
+
+	<!-- 获取数据统计广告下拉框 开始 guofei -->
+	<select id="selectAdListByCount" resultMap="adResultMap"
+		parameterType="java.lang.String">
+		SELECT DISTINCT
+		sa.`id` AS ad_id,
+		sa.`name` AS ad_name
+		FROM
+		sys_ad sa
+		LEFT JOIN sys_ad_style sas
+		ON sas.`id` = sa.`style_id`
+		LEFT JOIN sys_company sc
+		ON sc.`id` = sa.`company_id`
+		LEFT JOIN sys_order_ad soa ON soa.`ad_id`=sa.`id`
+		WHERE sa.`status` = 2
+		<if test="companyId!=null">
+			AND sc.`id` = #{companyId}
+		</if>
+		<if test="adOrderId!=null">
+			AND soa.`order_id` = #{adOrderId}
+		</if>
+		<if test="adStyleId!=null">
+			AND sas.`id` = #{adStyleId}
+		</if>
+	</select>
+	<!-- 获取数据统计广告下拉框 结束 -->
+
+	<!-- edited by mxy on 2017-04-19 11:02 begin -->
+	<!--根据获取广告相关曝光信息（按广告统计）guofei -->
+	<select id="getAdCountList" resultMap="getAdCountListMap"
+		parameterType="com.entgroup.adms.model.system.Ad">
+		SELECT
+		ad.id AS ad_id,
+		ad.name AS ad_name,
+		ads.id AS ad_style_id,
+		ads.name AS ad_style_name,
+		com.id AS company_id,
+		com.company_name,
+		com.short_name,
+		oa.id AS oa_id,
+		oa.order_id,
+		GROUP_CONCAT(DISTINCT
+		addc.id) AS addc_ids,
+		SUM(addc.show_count) AS show_count,
+		SUM(addc.user_count) AS user_count
+		FROM
+		sys_ad ad
+		LEFT JOIN sys_ad_style
+		ads
+		ON ad.style_id = ads.id
+		LEFT JOIN sys_company com
+		ON ad.company_id =
+		com.id
+		LEFT JOIN sys_order_ad oa
+		ON oa.ad_id = ad.id
+		LEFT JOIN
+		sys_ad_display_count addc
+		ON addc.ad_id = ad.id
+		<trim prefix="WHERE" prefixOverrides="AND |OR">
+			ad.status = 2
+			AND ad.order_online = 1
+			<if test="companyId!=null">
+				and ad.company_id=#{companyId}
+			</if>
+			<if test="adId!=null">
+				and ad.id=#{adId}
+			</if>
+			<if test="adStyleId!=null">
+				and ad.style_id=#{adStyleId}
+			</if>
+			<choose>
+				<when test="tortTimeStart ==null and tortTimeEnd !=null">
+					AND addc.day_time &lt; #{tortTimeEnd}
+				</when>
+				<when test="tortTimeStart !=null and tortTimeEnd ==null">
+					AND addc.day_time &gt; #{tortTimeStart}
+				</when>
+				<when test="tortTimeStart !=null and tortTimeEnd !=null">
+					AND addc.day_time between #{tortTimeStart} and
+					#{tortTimeEnd}
+				</when>
+				<otherwise></otherwise>
+			</choose>
+		</trim>
+		GROUP BY addc.ad_id
+	</select>
+	<!--ORDER BY addc.ad_id DESC -->
+	<resultMap type="com.entgroup.adms.model.system.Ad" id="getAdCountListMap"
+		extends="BaseResultMap">
+		<id column="ad_id" property="id" />
+		<result column="ad_name" property="name" />
+		<result column="addc_ids" property="addcIds" />
+		<result column="show_count" property="showCount" />
+		<result column="user_count" property="userCount" />
+		<association property="adStyle"
+			javaType="com.entgroup.adms.model.system.AdStyle">
+			<id column="ad_style_id" property="id" />
+			<result column="ad_style_name" property="name" />
+		</association>
+		<association property="company"
+			javaType="com.entgroup.adms.model.system.Company">
+			<id column="company_id" property="id" />
+			<result column="company_name" property="companyName" />
+			<result column="short_name" property="shortName" />
+		</association>
+		<association property="orderAd"
+			javaType="com.entgroup.adms.model.system.OrderAd">
+			<id column="oa_id" property="id" />
+			<result column="order_id" property="orderId" />
+		</association>
+	</resultMap>
+	<!-- edited by mxy on 2017-04-19 16:26 end -->
+	<!-- 订单完成后批量恢复广告（新订单可以关联广告）开始  guofei-->
+	<update id="updateBatchAd" parameterType="java.util.List">
+		UPDATE sys_ad SET sys_ad.`order_online`=0
+		WHERE sys_ad.`id` IN
+		<foreach collection="adIdList" item="item" index="index" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<!-- 订单完成后批量恢复广告（新订单可以关联广告）结束 -->
+
+	<!-- Begin -->
+	<!--查询广告列表-->
+	<resultMap id="adListResultMap" type="com.entgroup.adms.model.system.Ad" extends="BaseResultMap">
+		<result column="ad_order_id" property="adOrderId" />
+		<association property="adStyle" javaType="com.entgroup.adms.model.system.AdStyle">
+			<id column="ad_style_id" property="id" />
+			<result column="ad_style_name" property="name" />
+		</association>
+	</resultMap>
+	<select id="adList" parameterType="com.entgroup.adms.model.system.Ad" resultMap="adListResultMap">
+		SELECT
+			ad.id,
+			ad.name,
+			ad.company_id,
+			ad.order_online,
+			ad.creator_id,
+			ad.created,
+			ad.start_time,
+			ad.end_time,
+			ad.priority,
+			ad.type_id,
+			ad.review_time,
+			ad.style_id,
+			ad.link,
+			ad.link_mobile,
+			ad.image_path,
+			ad.tracking_code,
+
+			adStyle.id AS ad_style_id,
+			adStyle.name AS ad_style_name,
+
+			adOrder.id AS ad_order_id
+		FROM sys_ad ad
+		LEFT JOIN sys_ad_style adStyle ON ad.style_id = adStyle.id
+		LEFT JOIN sys_order_ad relation ON relation.ad_id = ad.id
+		LEFT JOIN sys_ad_order adOrder ON relation.order_id = adOrder.id
+		<trim prefix="where" prefixOverrides="AND |OR">
+			<if test="null != name">
+				AND ad.name = #{name}
+			</if>
+			<if test="null != companyId">
+				AND ad.company_id = #{companyId}
+			</if>
+		</trim>
+		ORDER BY ad.id DESC
+	</select>
+	<!-- End -->
+</mapper>

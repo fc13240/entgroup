@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.entgroup.adms.mapper.AdReasonTemplateMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.entgroup.adms.model.system.AdReasonTemplate">
+		<id column="id" property="id" />
+		<result column="content" property="content" />
+	</resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, content
+    </sql>
+    
+    <!-- 根据广告ID 获得广告未审核通告的原因  edited by liuxiaolong on 2017-04-10 -->
+    <select id="selectAdReasonListByAdid" resultMap="BaseResultMap" parameterType="java.lang.Long">
+       SELECT content FROM sys_ad_reason_template 
+	   LEFT JOIN sys_ad_reason ON FIND_IN_SET(sys_ad_reason_template.`id`,sys_ad_reason.`reason_ids`)
+	   WHERE sys_ad_reason.`ad_id` =  #{adId}
+    </select>
+    
+</mapper>

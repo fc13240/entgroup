@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+				http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+				http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+				http://www.springframework.org/schema/aop  
+            	http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+            	http://www.springframework.org/schema/task
+            	http://www.springframework.org/schema/task/spring-task-3.0.xsd 
+            	http://www.springframework.org/schema/mvc
+           		http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
+
+
+	<!-- 生成统计表sys_ad_display_count -->
+	<bean id="getDisplayCount" class="com.entgroup.adms.listener.GetDisplayCount"></bean>
+	<bean id="getDisplayCountJobDetail"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="getDisplayCount" />
+		<property name="targetMethod" value="executeGetDisplayCount" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<bean id="getDisplayCountCronTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="getDisplayCountJobDetail" />
+		<!-- run every morning at 6 AM -->
+		<property name="cronExpression" value="* * 0 * * ?" />
+	</bean>
+	<!-- 计算订单前一天的消费金额 -->
+	<bean id="getAdCosume" class="com.entgroup.adms.listener.GetAdCosume"></bean>
+	<bean id="getAdCosumeJobDetail"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="getAdCosume" />
+		<property name="targetMethod" value="executeGetAdCosume" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<bean id="getAdCosumeCronTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="getAdCosumeJobDetail" />
+		<!-- run every morning at 6 AM -->
+		<property name="cronExpression" value="* * 3 * * ?" />
+	</bean>
+
+
+	<!-- 纪录订单已投放广告位 -->
+	<bean id="getSlotCount" class="com.entgroup.adms.listener.GetSlotCount"></bean>
+	<bean id="getSlotCountJobDetail"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="getSlotCount" />
+		<property name="targetMethod" value="executeGetSlotCount" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<bean id="getSlotCountCronTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="getSlotCountJobDetail" />
+		<!-- run every morning at 6 AM -->
+		<property name="cronExpression" value="* * 1 * * ?" />
+	</bean>
+
+	<!-- 视频播放记录的每日统计 -->
+	<bean id="getCurrentDayVideoPlayAllCount" class="com.entgroup.adms.listener.GetCurrentDayVideoPlayCount"></bean>
+	<bean id="getCurrentVideoPlayCountDetail"
+		  class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="getCurrentDayVideoPlayAllCount" />
+		<property name="targetMethod" value="executeVideoPlayCountTest" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<bean id="getCurrentVideoPlayCountTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="getCurrentVideoPlayCountDetail" />
+		<!-- run every morning at 0 AM -->
+		<!--<property name="cronExpression" value="0 5 0 * * ?" />-->
+		<property name="cronExpression" value="0 5 0 * * ?" />
+	</bean>
+
+
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="getSlotCountCronTrigger" />
+				<ref bean="getDisplayCountCronTrigger" />
+				<ref bean="getAdCosumeCronTrigger" />
+				<ref bean="getCurrentVideoPlayCountTrigger" />
+			</list>
+		</property>
+	</bean>
+
+<!-- 定时任务任务发送    task-->
+<!-- 	<task:executor id="executor" pool-size="5" />   -->
+<!--         <task:scheduler id="scheduler" pool-size="10" /> -->
+<!--           <task:annotation-driven executor="executor" scheduler="scheduler"/>   -->
+<!--         <bean id="mailTaskManager" class="com.entgroup.adms.listener.GetSlotCount"> -->
+<!-- 	</bean> -->
+
+</beans>
+
+
